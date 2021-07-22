@@ -1,0 +1,10 @@
+.DS_*
+*.log
+logs
+
+# dependencies
+node_modules
+bower_components
+
+# build
+dist
