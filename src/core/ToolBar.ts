@@ -7,10 +7,10 @@ export default class ToolBar {
   constructor(private polymersheet: PolymerSheet) {
   }
 
-  render() {
-    d(this.containerId)
-      .css({
-        height: this.polymersheet.store.toolbarHeight + 'px'
-      })
+  mount() {
+    console.info('toolbar mount')
   }
+
+  // render() {
+  // }
 }

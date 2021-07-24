@@ -27,6 +27,44 @@ class Dom {
     }
     return this
   }
+
+  height() {
+    if (this.isShow()) {
+      return parseFloat(this.getStyleValue('height'))
+    } else {
+      this.css({ display: 'block !important', visibility: 'hidden' })
+      const elHeight = this.getStyleValue('height')
+      this.css({ display: 'none', visibility: 'none' })
+      return parseFloat(elHeight)
+    }
+  }
+
+  width() {
+    if (this.isShow()) {
+      return parseFloat(this.getStyleValue('width'))
+    } else {
+      this.css({ display: 'block !important', visibility: 'hidden' })
+      const elWidth = this.getStyleValue('width')
+      this.css({ display: 'none', visibility: 'none' })
+      return parseFloat(elWidth)
+    }
+  }
+
+  append(fragment: string | HTMLElement) {
+    if (typeof fragment === 'string') {
+      this.el.innerHTML = fragment
+    } else {
+      this.el.append(fragment)
+    }
+  }
+
+  isShow() {
+    return this.getStyleValue('display') !== 'none'
+  }
+
+  private getStyleValue<T extends keyof CSSStyleDeclaration>(attr: T) {
+    return getComputedStyle(this.el)[attr]
+  }
 }
 
 const d = (el: string | HTMLElement) => new Dom(el)
