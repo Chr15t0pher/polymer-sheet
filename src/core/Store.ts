@@ -8,8 +8,7 @@ const store = {
   rowHeaderWidth: 20,
   columnHeaderHeight: 20,
 
-  scrollbarHeight: 20,
-  scrollbarWidth: 46,
+  scrollbarSize: 12,
 
   contentWidth: 0,
   contentHeight: 0,

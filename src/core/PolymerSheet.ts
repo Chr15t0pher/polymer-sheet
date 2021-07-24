@@ -25,6 +25,8 @@ export class PolymerSheet {
     const container = d(this.store.containerId)
     const ContainerHeight = container.height()
     const ContainerWidth = container.width()
+
+    // calculate content's width & height.
     this.store.contentWidth = ContainerWidth - this.store.rowHeaderWidth
     this.store.contentHeight = ContainerHeight - (this.store.toolbarHeight + this.store.columnHeaderHeight + this.store.bottomBarHeight)
   }
@@ -41,6 +43,7 @@ export class PolymerSheet {
     const container = d(this.store.containerId)
     const ContainerHeight = container.height()
     const ContainerWidth = container.width()
+
     container.append (`
       <div id="polymersheet" style="width: ${ContainerWidth}px; height: ${ContainerHeight}px">
         <div id="polymersheet__toolbar" style="height: ${this.store.toolbarHeight}px">
@@ -62,10 +65,10 @@ export class PolymerSheet {
                 <div class="polymersheet__column_header" style="width: ${this.store.rowHeaderWidth}px; height: ${this.store.contentHeight}px">行</div>
               </td>
               <td class="polymersheet__content_grid">
-                <div class="polymersheet__scrollbar polymersheet__scrollbar-vertical">
+                <div class="polymersheet__scrollbar polymersheet__scrollbar-vertical" style="width: ${this.store.scrollbarSize}px; height: ${this.store.contentHeight + this.store.columnHeaderHeight - this.store.scrollbarSize}px; right: 0px; top: 0px;">
                   <div></div>
                 </div>
-                <div class="polymersheet__scrollbar polymersheet__scrollbar-horizontal">
+                <div class="polymersheet__scrollbar polymersheet__scrollbar-horizontal" style="width: ${this.store.contentWidth}px; height: ${this.store.scrollbarSize}px; right: 0px; bottom: 0px;">
                   <div></div>
                 </div>
                 <div class="polymersheet__content_overlay" style="width: ${this.store.contentWidth}px; height: ${this.store.contentHeight}px">content</div>
