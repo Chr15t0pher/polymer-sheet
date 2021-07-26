@@ -8,7 +8,7 @@ export default class Content {
   }
 
   mount() {
-    console.info('')
+    console.info()
   }
 
   render() {

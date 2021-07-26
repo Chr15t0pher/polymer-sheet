@@ -14,6 +14,8 @@ const store = {
   contentHeight: 0,
 
   bottomBarHeight: 42,
+
+  devicePixelRatio: 1,
 }
 
 export type Store = typeof store
