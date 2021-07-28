@@ -3,6 +3,7 @@ import Content from './Content'
 import ToolBar from './ToolBar'
 import BottomBar from './BottomBar'
 import { merge, d } from '../utils'
+import { PolymerSheetOptions } from '../declare'
 import './index.styl'
 
 export class PolymerSheet {
@@ -28,7 +29,7 @@ export class PolymerSheet {
   render() {
     this.toolbar.mount()
     this.content.mount()
-    this.bottomBar.render()
+    this.bottomBar.mount()
     this.mount()
     this.renderSkeleton()
   }
@@ -84,5 +85,6 @@ export class PolymerSheet {
         </div>
       </div>
     `)
+
   }
 }
