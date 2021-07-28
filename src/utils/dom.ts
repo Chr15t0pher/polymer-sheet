@@ -1,5 +1,5 @@
 class Dom {
-  el!: HTMLElement
+  private el!: HTMLElement
 
   constructor(el: string | HTMLElement) {
     if (typeof el === 'string') {
@@ -60,6 +60,10 @@ class Dom {
 
   isShow() {
     return this.getStyleValue('display') !== 'none'
+  }
+
+  elem() {
+    return this.el
   }
 
   private getStyleValue<T extends keyof CSSStyleDeclaration>(attr: T) {

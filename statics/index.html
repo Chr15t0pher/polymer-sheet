@@ -9,11 +9,31 @@
 <body onload="onload();">
   <div id="polymer__container" style="position: absolute; top: 0; right: 0; bottom: 0; left: 0;"></div>
   <script>
-    var sheets = [{}, {}]
+    var sheets = [{
+      id: '0',
+      cells: [
+        [
+          {},
+          {},
+          {},
+          null
+        ],
+        [
+          {},
+          {},
+          null,
+          null
+        ]
+      ],
+    }, {
+      id: '1',
+      cells: [[], []],
+    }]
     var onload = function() {
       const sheet = new PolymerSheet({
         containerId: '#polymer__container',
         sheets,
+        worksheetId: '0'
       })
 
       sheet.render()

@@ -1,6 +1,14 @@
 // boolean, number, error, string, empty
 export type DataType = 'b' | 'n' | 'e' | 's' | 'e'
 
+
+export interface Range {
+  rs: number
+  rd: number
+  cs: number
+  cd: number
+}
+
 export interface CellStyle {
   // font family
   ff: string
@@ -29,15 +37,46 @@ export interface Cell {
   s?: CellStyle
 }
 
+export interface SheetId extends String {
+  id: 'sheet'
+}
+export interface Sheet {
+  id: SheetId
 
-export interface Worksheet {
   cells: Cell[][]
   // styles: PolymerSheetLayoutStyle
   merges: []
+
+  defaultRowHeight?: number
+
+  defaultColWidth?: number
+
+  rowsHeightMap?: Record<string, number>
+
+  colsWidthMap?: Record<string, number>
+
+  rowsHidden?: string[]
+
+  colsHidden?: string[]
+
+  scrollHeight?: number
+
+  scrollLeft?: number
 }
 
 export interface PolymerSheetOptions {
   containerId: string
-  sheets: Worksheet[]
+
+  sheets: Sheet[]
+
   toolbarHeight?: number
+
+  rowHeaderWidth?: number
+  columnHeaderHeight?: number
+
+  scrollbarSize?: number
+
+  bottomBarHeight?: number
+
+  worksheetId?: SheetId
 }

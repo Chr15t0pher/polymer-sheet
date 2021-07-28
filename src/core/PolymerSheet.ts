@@ -3,7 +3,7 @@ import Content from './Content'
 import ToolBar from './ToolBar'
 import BottomBar from './BottomBar'
 import { merge, d } from '../utils'
-import { PolymerSheetOptions } from '../declare'
+import { PolymerSheetOptions, Sheet, SheetId } from '../declare'
 import './index.styl'
 
 export class PolymerSheet {
@@ -20,18 +20,36 @@ export class PolymerSheet {
     this.toolbar = new ToolBar(this)
     this.content = new Content(this)
     this.bottomBar = new BottomBar()
-  }
 
-  mount() {
-    console.info('')
+    if (this.store.sheets.length > 0) {
+      this.setWorksheet(this.store.worksheetId || this.store.sheets[0].id)
+    }
   }
 
   render() {
     this.toolbar.mount()
-    this.content.mount()
     this.bottomBar.mount()
-    this.mount()
     this.renderSkeleton()
+    this.content.mount()
+    this.content.draw()
+  }
+
+  setWorksheet(sheetId: SheetId) {
+    this.store.worksheetId = sheetId
+    const worksheet = this.getWorksheet()
+    this.setWorksheetActualSize(worksheet)
+    console.info(this.store.worksheetActualHeight, this.store.worksheetActualWidth, this.store.horizontalLinesPosition, this.store.verticalLinesPosition)
+  }
+
+  getWorksheet() {
+    if (this.store.worksheetId) {
+      for (let i = 0; i < this.store.sheets.length; i++) {
+        if (this.store.worksheetId === this.store.sheets[i].id) {
+          return this.store.sheets[i]
+        }
+      }
+    }
+    return this.store.sheets[0]
   }
 
   renderSkeleton() {
@@ -39,14 +57,14 @@ export class PolymerSheet {
     const ContainerHeight = container.height()
     const ContainerWidth = container.width()
 
-    const cellsOverlayWidth = ContainerWidth - this.store.rowHeaderWidth
-    const cellsOverlayHeight = ContainerHeight - (this.store.toolbarHeight + this.store.columnHeaderHeight + this.store.bottomBarHeight)
+    const cellsOverlayWidth = ContainerWidth - this.store.rowHeaderWidth!
+    const cellsOverlayHeight = ContainerHeight - (this.store.toolbarHeight! + this.store.columnHeaderHeight! + this.store.bottomBarHeight!)
 
-    const verticalScrollbarHeight = cellsOverlayHeight + this.store.columnHeaderHeight - this.store.scrollbarSize
+    const verticalScrollbarHeight = cellsOverlayHeight + this.store.columnHeaderHeight! - this.store.scrollbarSize!
     const horizontalScrollbarWidth = cellsOverlayWidth
 
-    this.store.contentWidth = ContainerWidth - this.store.scrollbarSize
-    this.store.contentHeight = ContainerHeight - (this.store.scrollbarSize + this.store.toolbarHeight + this.store.bottomBarHeight)
+    this.store.contentWidth = ContainerWidth - this.store.scrollbarSize!
+    this.store.contentHeight = ContainerHeight - (this.store.scrollbarSize! + this.store.toolbarHeight! + this.store.bottomBarHeight!)
 
     container.append (`
       <div id="polymersheet" style="width: ${ContainerWidth}px; height: ${ContainerHeight}px">
@@ -86,5 +104,35 @@ export class PolymerSheet {
       </div>
     `)
 
+  }
+
+  private setWorksheetActualSize(sheet: Sheet) {
+    const rowLen = sheet.cells.length
+    const columnLen = sheet.cells[0].length
+    for (let i = 0; i < rowLen; i++) {
+      let rowHeight = this.store.defaultRowHeight
+
+      if (sheet.rowsHeightMap && sheet.rowsHeightMap[i] !== null) {
+        rowHeight = sheet.rowsHeightMap[i]
+      } else if (sheet.rowsHidden && sheet.rowsHidden[i] !== null) {
+        this.store.horizontalLinesPosition.push(this.store.worksheetActualHeight)
+        continue
+      }
+      this.store.worksheetActualHeight += Math.round(rowHeight + 1)
+      this.store.horizontalLinesPosition.push(this.store.worksheetActualHeight)
+    }
+
+    for (let i = 0; i < columnLen; i++) {
+      let columnWidth = this.store.defaultColWidth
+
+      if (sheet.colsWidthMap && sheet.colsWidthMap[i] !== null) {
+        columnWidth = sheet.colsWidthMap[i]
+      } else if (sheet.colsHidden && sheet.colsHidden[i] !== null) {
+        this.store.verticalLinesPosition.push(this.store.worksheetActualWidth)
+        continue
+      }
+      this.store.worksheetActualWidth += Math.round(columnWidth + 1)
+      this.store.verticalLinesPosition.push(this.store.worksheetActualWidth)
+    }
   }
 }
