@@ -59,7 +59,7 @@ export interface Sheet {
 
   colsHidden?: string[]
 
-  scrollHeight?: number
+  scrollTop?: number
 
   scrollLeft?: number
 }

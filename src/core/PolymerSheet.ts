@@ -38,7 +38,6 @@ export class PolymerSheet {
     this.store.worksheetId = sheetId
     const worksheet = this.getWorksheet()
     this.setWorksheetActualSize(worksheet)
-    console.info(this.store.worksheetActualHeight, this.store.worksheetActualWidth, this.store.horizontalLinesPosition, this.store.verticalLinesPosition)
   }
 
   getWorksheet() {
@@ -76,10 +75,10 @@ export class PolymerSheet {
           <table>
             <tr>
               <td class="polymersheet__view_grid">
-                <div class="polymersheet__space" style="width: ${this.store.rowHeaderWidth}px; height: ${this.store.columnHeaderHeight}px;">空</div>
+                <div class="polymersheet__space" style="width: ${this.store.rowHeaderWidth}px; height: ${this.store.columnHeaderHeight}px;"></div>
               </td>
               <td class="polymersheet__view_grid">
-                <div class="polymersheet__col_header" style="width: ${cellsOverlayWidth}px; height: ${this.store.columnHeaderHeight}px; ">列</div>
+                <div class="polymersheet__col_header" style="width: ${cellsOverlayWidth}px; height: ${this.store.columnHeaderHeight}px; "></div>
               </td>
             </tr>
             <tr>
@@ -88,10 +87,10 @@ export class PolymerSheet {
               </td>
               <td class="polymersheet__view_grid">
                 <div class="polymersheet__scrollbar polymersheet__scrollbar-vertical" style="width: ${this.store.scrollbarSize}px; height: ${verticalScrollbarHeight}px; right: 0px; top: 0px;">
-                  <div></div>
+                  <div style="height: ${this.store.worksheetActualHeight}px"></div>
                 </div>
                 <div class="polymersheet__scrollbar polymersheet__scrollbar-horizontal" style="width: ${horizontalScrollbarWidth}px; height: ${this.store.scrollbarSize}px; right: 0px; bottom: 0px;">
-                  <div></div>
+                  <div style="width: ${this.store.worksheetActualWidth}px"></div>
                 </div>
                 <div class="polymersheet__cells_overlay" style="width: ${cellsOverlayWidth}px; height: ${cellsOverlayHeight}px">content</div>
               </td>
@@ -118,7 +117,7 @@ export class PolymerSheet {
         this.store.horizontalLinesPosition.push(this.store.worksheetActualHeight)
         continue
       }
-      this.store.worksheetActualHeight += Math.round(rowHeight + 1)
+      this.store.worksheetActualHeight += Math.round(rowHeight)
       this.store.horizontalLinesPosition.push(this.store.worksheetActualHeight)
     }
 
@@ -131,7 +130,7 @@ export class PolymerSheet {
         this.store.verticalLinesPosition.push(this.store.worksheetActualWidth)
         continue
       }
-      this.store.worksheetActualWidth += Math.round(columnWidth + 1)
+      this.store.worksheetActualWidth += Math.round(columnWidth)
       this.store.verticalLinesPosition.push(this.store.worksheetActualWidth)
     }
   }

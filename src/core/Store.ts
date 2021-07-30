@@ -18,6 +18,7 @@ export interface Store extends PolymerSheetOptions {
   verticalLinesPosition: number[]
 }
 
+// store 中的宽高是内容 + border 的总宽高
 const store: Store = {
   containerId: 'polymer_sheet',
 
@@ -25,7 +26,7 @@ const store: Store = {
 
   toolbarHeight: 42,
 
-  rowHeaderWidth: 20,
+  rowHeaderWidth: 40,
   columnHeaderHeight: 20,
 
   scrollbarSize: 12,
@@ -42,8 +43,8 @@ const store: Store = {
   zoomRatio: 1,
 
   // 默认 cell 宽高
-  defaultRowHeight: 19,
-  defaultColWidth: 73,
+  defaultRowHeight: 20,
+  defaultColWidth: 74,
 
   // 选中表格实际宽高
   worksheetActualWidth: 0,
