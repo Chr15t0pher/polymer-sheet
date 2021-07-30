@@ -13,7 +13,6 @@ export default class Content {
     if (!ctx) {
       throw new Error('fail to get canvas 2D context')
     } else {
-      // const start_row
       this.ctx = ctx
     }
   }
@@ -24,7 +23,7 @@ export default class Content {
     const scrollTop = worksheet.scrollTop
 
     this.drawRowHeader(scrollTop)
-    this.drawColumnHeader()
+    this.drawColumnHeader(scrollLeft)
     this.drawContent()
   }
 
@@ -32,6 +31,56 @@ export default class Content {
     if (!scrollTop) {
       scrollTop = 0
     }
+    const offsetTop = this.polymersheet.store.columnHeaderHeight!
+    const contentHeight = this.polymersheet.store.contentHeight!
+    const horizontalLinesPosition = this.polymersheet.store.horizontalLinesPosition
+    const rowHeaderWidth = this.polymersheet.store.rowHeaderWidth!
+
+    let startRow = position_binary_search(horizontalLinesPosition, scrollTop)
+    let endRow = position_binary_search(horizontalLinesPosition, scrollTop + contentHeight)
+
+    if (startRow === -1) {
+      startRow = 0
+    }
+
+    if (endRow === -1) {
+      endRow = horizontalLinesPosition.length - 1
+    }
+
+    this.ctx.clearRect(0, offsetTop, rowHeaderWidth, contentHeight - offsetTop)
+    
+    this.ctx.save()
+    this.ctx.translate(0, offsetTop)
+    for (let i = startRow; i <= endRow; i++) {
+      const preCurrentRowAxisY = i === 0 ? -scrollTop : horizontalLinesPosition[i - 1] - scrollTop
+      const currentRowAxisY = horizontalLinesPosition[i] - scrollTop
+      
+      // vertical lines
+      this.ctx.strokeStyle = '#dfdfdf'
+      this.ctx.lineWidth = 1
+
+      this.ctx.beginPath()
+      this.ctx.moveTo(rowHeaderWidth - 0.5, preCurrentRowAxisY - 1)
+      this.ctx.lineTo(rowHeaderWidth - 0.5, currentRowAxisY - 1)
+      this.ctx.closePath()
+      this.ctx.stroke()
+      
+      // horizontal lines
+      this.ctx.beginPath()
+      this.ctx.moveTo(0, currentRowAxisY)
+      this.ctx.lineTo(rowHeaderWidth, currentRowAxisY - 0.5)
+      this.ctx.closePath()
+      this.ctx.stroke()
+      
+      // content
+      this.ctx.textAlign = 'center'
+      this.ctx.textBaseline = 'middle'
+      const textHorizontalPos = Math.round(rowHeaderWidth / 2)
+      const textVerticalPos = Math.round((currentRowAxisY + preCurrentRowAxisY) / 2)
+
+      this.ctx.fillText(`${i + 1}`, textHorizontalPos, textVerticalPos)
+    }
+    this.ctx.restore()
   }
 
   drawColumnHeader(scrollLeft?: number) {
@@ -42,26 +91,26 @@ export default class Content {
     const contentWidth = this.polymersheet.store.contentWidth
     const verticalLinesPosition = this.polymersheet.store.verticalLinesPosition
     const columnHeaderHeight = this.polymersheet.store.columnHeaderHeight!
-    console.info(this.polymersheet.store.verticalLinesPosition, scrollLeft)
 
-    let start_col = position_binary_search(verticalLinesPosition, scrollLeft)
-    let end_col = position_binary_search(verticalLinesPosition, scrollLeft + contentWidth)
+    let startCol = position_binary_search(verticalLinesPosition, scrollLeft)
+    let endCol = position_binary_search(verticalLinesPosition, scrollLeft + contentWidth)
 
-    if (start_col === -1) {
-      start_col = 0
+    if (startCol === -1) {
+      startCol = 0
     }
-    if (end_col === -1) {
-      end_col = verticalLinesPosition.length - 1
+    if (endCol === -1) {
+      endCol = verticalLinesPosition.length - 1
     }
 
     this.ctx.clearRect(offsetLeft, 0, contentWidth - offsetLeft, columnHeaderHeight)
-    for (let i = start_col; i <= end_col; i++) {
+    this.ctx.save()
+    this.ctx.translate(offsetLeft, 0)
+  
+    for (let i = startCol; i <= endCol; i++) {
       // vertical lines
-      this.ctx.save()
-      this.ctx.translate(offsetLeft, 0)
       this.ctx.beginPath()
       this.ctx.moveTo(verticalLinesPosition[i] - scrollLeft + 0.5, 0)
-      this.ctx.lineTo(verticalLinesPosition[i] - scrollLeft + 0.5, columnHeaderHeight)
+      this.ctx.lineTo(verticalLinesPosition[i] - scrollLeft + 0.5, columnHeaderHeight - 1)
       this.ctx.strokeStyle = '#dfdfdf'
       this.ctx.lineWidth = 1
       this.ctx.closePath()
@@ -69,7 +118,7 @@ export default class Content {
 
       // horizontal lines
       this.ctx.beginPath()
-      if (i === start_col) {
+      if (i === startCol) {
         this.ctx.moveTo(0, columnHeaderHeight - 0.5)
       } else {
         this.ctx.moveTo(verticalLinesPosition[i - 1] - scrollLeft, columnHeaderHeight - 0.5)
@@ -78,17 +127,17 @@ export default class Content {
       this.ctx.closePath()
       this.ctx.stroke()
 
-      // draw content
+      // content
       const columnNum = transNumToColumnIdx(i)
-      const preStartColHorizontalAxis = i === 0 ? -scrollLeft : verticalLinesPosition[i - 1] - scrollLeft
-      const textHorizontalPos = Math.round((preStartColHorizontalAxis + (verticalLinesPosition[i] - scrollLeft)) / 2)
+      const preCurrentColHorizontalAxisX = i === 0 ? -scrollLeft : verticalLinesPosition[i - 1] - scrollLeft
+      const textHorizontalPos = Math.round((preCurrentColHorizontalAxisX + (verticalLinesPosition[i] - scrollLeft)) / 2)
       const textVerticalPos = Math.round(columnHeaderHeight / 2)
 
       this.ctx.textAlign = 'center'
       this.ctx.textBaseline = 'middle'
       this.ctx.fillText(columnNum, textHorizontalPos, textVerticalPos)
-      this.ctx.restore()
     }
+    this.ctx.restore()
   }
 
   drawContent() {

@@ -83,7 +83,7 @@ export class PolymerSheet {
             </tr>
             <tr>
               <td class="polymersheet__view_grid">
-                <div class="polymersheet__column_header" style="width: ${this.store.rowHeaderWidth}px; height: ${cellsOverlayHeight}px">行</div>
+                <div class="polymersheet__column_header" style="width: ${this.store.rowHeaderWidth}px; height: ${cellsOverlayHeight}px"></div>
               </td>
               <td class="polymersheet__view_grid">
                 <div class="polymersheet__scrollbar polymersheet__scrollbar-vertical" style="width: ${this.store.scrollbarSize}px; height: ${verticalScrollbarHeight}px; right: 0px; top: 0px;">
@@ -92,7 +92,7 @@ export class PolymerSheet {
                 <div class="polymersheet__scrollbar polymersheet__scrollbar-horizontal" style="width: ${horizontalScrollbarWidth}px; height: ${this.store.scrollbarSize}px; right: 0px; bottom: 0px;">
                   <div style="width: ${this.store.worksheetActualWidth}px"></div>
                 </div>
-                <div class="polymersheet__cells_overlay" style="width: ${cellsOverlayWidth}px; height: ${cellsOverlayHeight}px">content</div>
+                <div class="polymersheet__cells_overlay" style="width: ${cellsOverlayWidth}px; height: ${cellsOverlayHeight}px"></div>
               </td>
             </tr>
           </table>
