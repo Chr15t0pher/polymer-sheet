@@ -113,7 +113,7 @@ export class PolymerSheet {
 
       if (sheet.rowsHeightMap && sheet.rowsHeightMap[i] !== null) {
         rowHeight = sheet.rowsHeightMap[i]
-      } else if (sheet.rowsHidden && sheet.rowsHidden[i] !== null) {
+      } else if (sheet.rowsHidden && sheet.rowsHidden.includes(i)) {
         this.store.horizontalLinesPosition.push(this.store.worksheetActualHeight)
         continue
       }
@@ -126,7 +126,7 @@ export class PolymerSheet {
 
       if (sheet.colsWidthMap && sheet.colsWidthMap[i] !== null) {
         columnWidth = sheet.colsWidthMap[i]
-      } else if (sheet.colsHidden && sheet.colsHidden[i] !== null) {
+      } else if (sheet.colsHidden && sheet.colsHidden.includes(i)) {
         this.store.verticalLinesPosition.push(this.store.worksheetActualWidth)
         continue
       }

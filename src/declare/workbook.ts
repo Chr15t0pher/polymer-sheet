@@ -55,9 +55,9 @@ export interface Sheet {
 
   colsWidthMap?: Record<string, number>
 
-  rowsHidden?: string[]
+  rowsHidden?: number[]
 
-  colsHidden?: string[]
+  colsHidden?: number[]
 
   scrollTop?: number
 
