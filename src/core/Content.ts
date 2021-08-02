@@ -20,18 +20,29 @@ export default class Content {
 
   draw() {
     const worksheet = this.polymersheet.getWorksheet()
-    const scrollLeft = worksheet.scrollLeft
-    const scrollTop = worksheet.scrollTop
+    const { scrollLeft, scrollTop } = worksheet
 
+    this.drawUpperLeftCorner()
     this.drawRowHeader(worksheet, scrollTop)
     this.drawColumnHeader(worksheet, scrollLeft)
-    this.drawContent()
+    this.drawContent(worksheet, scrollLeft, scrollTop)
   }
 
-  drawRowHeader(worksheet: Sheet, scrollTop?: number) {
-    if (!scrollTop) {
-      scrollTop = 0
-    }
+  drawUpperLeftCorner() {
+    const { columnHeaderHeight, rowHeaderWidth } = this.polymersheet.store
+    this.ctx.save()
+    this.ctx.strokeStyle = '#dfdfdf'
+    this.ctx.lineWidth = 1
+
+    this.ctx.beginPath()
+    this.ctx.moveTo(0, columnHeaderHeight! - 0.5)
+    this.ctx.lineTo(rowHeaderWidth! - 0.5, columnHeaderHeight! - 0.5)
+    this.ctx.lineTo(rowHeaderWidth! - 0.5, 0)
+    this.ctx.stroke()
+    this.ctx.restore()
+  }
+
+  drawRowHeader(worksheet: Sheet, scrollTop = 0) {
     const offsetTop = this.polymersheet.store.columnHeaderHeight!
     const contentHeight = this.polymersheet.store.contentHeight!
     const horizontalLinesPosition = this.polymersheet.store.horizontalLinesPosition
@@ -87,10 +98,7 @@ export default class Content {
     this.ctx.restore()
   }
 
-  drawColumnHeader(worksheet: Sheet, scrollLeft?: number) {
-    if (!scrollLeft) {
-      scrollLeft = 0
-    }
+  drawColumnHeader(worksheet: Sheet, scrollLeft = 0) {
     const offsetLeft = this.polymersheet.store.rowHeaderWidth!
     const contentWidth = this.polymersheet.store.contentWidth
     const verticalLinesPosition = this.polymersheet.store.verticalLinesPosition
@@ -146,7 +154,71 @@ export default class Content {
     this.ctx.restore()
   }
 
-  drawContent() {
-    //
+  drawContent(worksheet: Sheet, scrollTop = 0, scrollLeft = 0) {
+    const offsetLeft = this.polymersheet.store.rowHeaderWidth!
+    const offsetTop = this.polymersheet.store.columnHeaderHeight!
+    const contentWidth = this.polymersheet.store.contentWidth
+    const contentHeight = this.polymersheet.store.contentHeight
+    const { verticalLinesPosition, horizontalLinesPosition } = this.polymersheet.store
+
+    let startRow = position_binary_search(verticalLinesPosition, scrollLeft)
+    let endRow = position_binary_search(verticalLinesPosition, contentWidth + scrollLeft)
+    let startCol = position_binary_search(horizontalLinesPosition, scrollTop)
+    let endCol = position_binary_search(horizontalLinesPosition, contentHeight + scrollTop)
+
+    if (startRow === -1) {
+      startRow = 0
+    }
+
+    if (endRow === -1) {
+      endRow = this.polymersheet.store.verticalLinesPosition.length - 1
+    }
+
+    if (startCol === -1) {
+      startCol = 0
+    }
+
+    if (endCol === -1) {
+      endCol = this.polymersheet.store.verticalLinesPosition.length - 1
+    }
+
+    this.ctx.clearRect(offsetLeft, offsetTop, contentWidth, contentHeight)
+    this.ctx.save()
+
+    this.ctx.translate(offsetLeft, offsetTop)
+
+    for (let r = startRow; r <= endRow; r++) {
+      if (worksheet.rowsHidden && worksheet.rowsHidden.includes(r)) {
+        continue
+      }
+
+      const preCurrentRowEndAxisY = r === 0 ? -scrollTop : horizontalLinesPosition[r - 1] - scrollTop
+      const currentRowEndAxisY = horizontalLinesPosition[r] - scrollTop
+
+      for (let c = startCol; c <= endCol; c++) {
+        if (worksheet.colsHidden && worksheet.colsHidden.includes(c)) {
+          continue
+        }
+
+        const preCurrentColEndAxisX = c === 0 ? -scrollLeft : verticalLinesPosition[c - 1] - scrollLeft
+        const currentColEndAxisX = verticalLinesPosition[c] - scrollLeft
+
+        this.drawCell(preCurrentColEndAxisX, preCurrentRowEndAxisY, currentColEndAxisX, currentRowEndAxisY)
+      }
+    }
+    this.ctx.restore()
+  }
+
+  drawCell(sx: number, sy: number, ex: number, ey: number) {
+    this.ctx.save()
+    this.ctx.strokeStyle = '#dfdfdf'
+    this.ctx.lineWidth = 1
+    this.ctx.beginPath()
+    this.ctx.moveTo(sx, ey)
+    this.ctx.lineTo(ex + 0.5, ey + 0.5)
+    this.ctx.lineTo(ex + 0.5, sy)
+    this.ctx.stroke()
+    this.ctx.closePath()
+    this.ctx.restore()
   }
 }

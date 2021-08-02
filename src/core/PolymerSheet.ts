@@ -75,7 +75,7 @@ export class PolymerSheet {
           <table>
             <tr>
               <td class="polymersheet__view_grid">
-                <div class="polymersheet__space" style="width: ${this.store.rowHeaderWidth}px; height: ${this.store.columnHeaderHeight}px;"></div>
+                <div class="polymersheet__upper_left_corner" style="width: ${this.store.rowHeaderWidth}px; height: ${this.store.columnHeaderHeight}px;"></div>
               </td>
               <td class="polymersheet__view_grid">
                 <div class="polymersheet__col_header" style="width: ${cellsOverlayWidth}px; height: ${this.store.columnHeaderHeight}px; "></div>
