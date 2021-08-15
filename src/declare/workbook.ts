@@ -1,26 +1,71 @@
 // boolean, number, error, string, empty
-export type DataType = 'b' | 'n' | 'e' | 's' | 'e'
+export enum DataType {
+  Boolean = 'b',
+  Number = 'n',
+  Error = 'e',
+  String = 's',
+  Empty = 'z'
+}
 
+export enum TextWrap {
+  break = 'break', // 截断
+  auto = 'auto',   // 自动换行
+  overflow = 'overflow' // 溢出
+}
+
+export enum TextAlign {
+  start = 'start',
+  end = 'end',
+  center = 'center'
+}
+
+export enum TextBaseline {
+  top = 'top',
+  hanging = 'hanging',
+  middle = 'middle',
+  alphabetic = 'alphabetic',
+  ideographic = 'ideographic',
+  bottom = 'bottom'
+}
+
+export enum TextOrientation {
+  normal = 'normal',
+  up = 'up',
+  down = 'down',
+  vertical = 'vertical'
+}
+
+export interface MeasuredTextMetrics extends TextMetrics {
+  height: number
+}
 
 export interface Range {
-  rs: number
-  rd: number
   cs: number
+  rs: number
   cd: number
+  rd: number
 }
 
 export interface CellStyle {
-  // font family
-  ff: string
-
-  // font size
-  fs: number
-
-  // font color
-  fc: string
-
+  // foreground color
+  fg?: string
   // background color
-  bc: string
+  bg?: string
+
+  // font family
+  ff?: string
+  // font size
+  fs?: number
+  // font color
+  fc?: string
+  // text wrap
+  tw?: TextWrap
+  // text align
+  ta?: TextAlign
+  // text vertical align
+  tba?: TextBaseline
+  // text orientation
+  to?: TextOrientation
 }
 
 export interface Cell {
@@ -35,6 +80,8 @@ export interface Cell {
 
   // cell style
   s?: CellStyle
+
+  mc?: Range
 }
 
 export interface SheetId extends String {
@@ -43,7 +90,7 @@ export interface SheetId extends String {
 export interface Sheet {
   id: SheetId
 
-  cells: Cell[][]
+  cells: Array<null | Cell>[]
   // styles: PolymerSheetLayoutStyle
   merges: []
 

@@ -68,7 +68,6 @@ export class PolymerSheet {
     container.append (`
       <div id="polymersheet" style="width: ${ContainerWidth}px; height: ${ContainerHeight}px">
         <div id="polymersheet__toolbar" style="height: ${this.store.toolbarHeight}px">
-          toolbar
         </div>
         <div id="polymersheet__view">
           <canvas id="polymersheet__content" width="${this.store.contentWidth * this.store.devicePixelRatio}" height="${this.store.contentHeight * this.store.devicePixelRatio}" style="width: ${this.store.contentWidth}px; height: ${this.store.contentHeight}px"></canvas>

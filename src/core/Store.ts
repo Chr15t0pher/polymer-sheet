@@ -16,6 +16,8 @@ export interface Store extends PolymerSheetOptions {
 
   horizontalLinesPosition: number[]
   verticalLinesPosition: number[]
+
+  overflowMap: Map<number, { curCol: number, startCol: number, endCol: number }>
 }
 
 // store 中的宽高是内容 + border 的总宽高
@@ -53,6 +55,9 @@ const store: Store = {
   // 选中表格垂直和水平表格线的实际位置
   horizontalLinesPosition: [],
   verticalLinesPosition: [],
+
+  // 文本换行溢出位置记录
+  overflowMap: new Map(),
 }
 
 export default store
