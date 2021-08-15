@@ -12,7 +12,6 @@ export function getCellTextInfo(ctx: CanvasRenderingContext2D, cell: Cell, optio
   const textWrap = cell.s === void 0 || cell.s === null || cell.s.tw === void 0 || cell.s.tw === null ? TextWrap.break : cell.s.tw
   const { textAreaHeight, textAreaWidth, leading, letterSpacing } = options
   const textInfo: any = { values: [] }
-  console.info('131313')
 
   if (value === null) {
     return
@@ -56,8 +55,6 @@ export function getCellTextInfo(ctx: CanvasRenderingContext2D, cell: Cell, optio
     } else if (textBaseline === TextBaseline.middle) {
       top = textAreaHeight - leading - actualBoundingBoxDescent
     }
-
-    console.info('1313131')
 
     textInfo.values.push({
       text: value,
