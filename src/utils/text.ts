@@ -59,11 +59,36 @@ export function getCellTextInfo(ctx: CanvasRenderingContext2D, cell: Cell, optio
         line = words[i]
       } else {
         line += words[i]
-      }
+      }         
       if (i === words.length - 1 && line.length > 0) {
         lines.push(line)
       }
     }
+
+    let allLinesHeight = 0
+    for (let i =0; i < lines.length; i++) {
+      const { actualBoundingBoxAscent, actualBoundingBoxDescent } = ctx.measureText(line)
+      const lineHeight = actualBoundingBoxAscent + actualBoundingBoxDescent + leading
+      const lineWidth = textAreaWidth
+
+      let top = lineHeight - leading / 2
+      if (textBaseline === TextBaseline.top) {
+        top = allLinesHeight + lineHeight - leading / 2 - actualBoundingBoxDescent - actualBoundingBoxAscent
+      } else if (textBaseline === TextBaseline.middle) {
+        top = allLinesHeight + lineHeight - leading / 2 - actualBoundingBoxDescent
+      }
+
+      const left = 0
+      allLinesHeight += lineHeight
+      textInfo.lines.push({
+        text: lines[i],
+        top,
+        left,
+        textHeight: lineHeight,
+        textWidth: lineWidth,
+      })                      
+    }
+    console.info(allLinesHeight)
   } else {
     // 溢出和截断
     const textMetrics = ctx.measureText(value)

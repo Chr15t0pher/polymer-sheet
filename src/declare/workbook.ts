@@ -98,9 +98,9 @@ export interface Sheet {
 
   defaultColWidth?: number
 
-  rowsHeightMap?: Record<string, number>
+  rowsHeightMap?: Record<number, number>
 
-  colsWidthMap?: Record<string, number>
+  colsWidthMap?: Record<number, number>
 
   rowsHidden?: number[]
 

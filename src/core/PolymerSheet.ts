@@ -2,7 +2,7 @@ import store from './Store'
 import Content from './Content'
 import ToolBar from './ToolBar'
 import BottomBar from './BottomBar'
-import { merge, d } from '../utils'
+import { merge, d, isNullish } from '../utils'
 import { PolymerSheetOptions, Sheet, SheetId } from '../declare'
 import './index.styl'
 
@@ -110,7 +110,7 @@ export class PolymerSheet {
     for (let i = 0; i < rowLen; i++) {
       let rowHeight = this.store.defaultRowHeight
 
-      if (sheet.rowsHeightMap && sheet.rowsHeightMap[i] !== null) {
+      if (sheet.rowsHeightMap && !isNullish(sheet.rowsHeightMap[i])) {
         rowHeight = sheet.rowsHeightMap[i]
       } else if (sheet.rowsHidden && sheet.rowsHidden.includes(i)) {
         this.store.horizontalLinesPosition.push(this.store.worksheetActualHeight)

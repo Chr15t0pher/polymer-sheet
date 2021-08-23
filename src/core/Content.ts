@@ -417,9 +417,34 @@ export default class Content {
 
   drawCell(worksheet: Sheet, row: number, col: number, startAxisX: number, startAxisY: number, endAxisX: number, endAxisY: number, offsetLeft: number, offsetTop: number, overflowMap: Map<number, Map<number, any>>, scrollLeft: number, scrollTop: number, startRow: number, startCol: number, endRow: number, endCol: number) {
     const cell = worksheet.cells[row][col]
+    
     if (!cell) {
       return
     }
+
+    const cellOverflowInfo = this.getCellOverflowInfo(row, col, endCol, overflowMap)
+
+    let needToDrawRightBorder = true
+    if (cellOverflowInfo) {
+      if (cellOverflowInfo.colLast) {
+        const { mainCol, mainRow } = cellOverflowInfo
+        this.drawOverflowCell(
+          worksheet,
+          mainRow,
+          mainCol,
+          startCol,
+          endCol,
+          overflowMap,
+          scrollLeft,
+          scrollTop,
+          offsetLeft,
+          offsetTop,
+        )
+      } else {
+        needToDrawRightBorder = false
+      }
+    }
+
     const textInfo = getCellTextInfo(this.ctx, cell, {
       textAreaWidth: endAxisX - startAxisX,
       textAreaHeight: endAxisY - startAxisY,
@@ -432,6 +457,19 @@ export default class Content {
     this.ctx.save()
     this.ctx.translate(offsetLeft, offsetTop)
     this.drawText(textInfo, startAxisX, startAxisY)
+
+    // 底部框
+    this.ctx.strokeStyle = '#dfdfdf'
+    this.ctx.lineWidth = 1
+    this.ctx.beginPath()
+    this.ctx.moveTo(startAxisX, endAxisY - 0.5)
+    this.ctx.lineTo(endAxisX - 0.5, endAxisY - 0.5)
+
+    // 右边框
+    if (needToDrawRightBorder) {
+      this.ctx.lineTo(endAxisX - 0.5, startAxisY)
+    }
+    this.ctx.stroke()
     this.ctx.restore()
   }
 
