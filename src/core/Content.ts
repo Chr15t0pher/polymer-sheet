@@ -214,9 +214,9 @@ export default class Content {
         }
 
         if (worksheet.cells[r][c] !== null) {
-          const value = worksheet.cells[r][c]
+          const value = worksheet.cells[r][c]!
 
-          if (value !== null && 'mc' in value) {
+          if (!isNullish(value) && 'mc' in value) {
             if (value.t !== DataType.Empty) {
               mergeCache[r + '_' + c] = cellsUpdate.length
             } else {
@@ -244,9 +244,7 @@ export default class Content {
           ex: endAxisX,
           ey: endAxisY,
           columnWidth,
-        })
-        
-        // this.drawCell(startAxisX, startAxisY, endAxisX, endAxisY)
+        })        
       }
     }
 
@@ -309,12 +307,24 @@ export default class Content {
       }
     }
 
+    const mergeCells = []
+
     // 绘制
     for (let cellsUpdateIdx = 0; cellsUpdateIdx < cellsUpdate.length; cellsUpdateIdx++) {
-      const { r, c, sx, sy, ex, ey} = cellsUpdate[cellsUpdateIdx]
-      if (isNullish(worksheet.cells[r][c])) {
+      const { r, c, sx, sy, ex, ey } = cellsUpdate[cellsUpdateIdx]
+      const cell = worksheet.cells[r][c]
+      if (!cell) {
         this.drawNullCell(worksheet, r, c, sx, sy, ex, ey, offsetLeft, offsetTop, overflowMap, scrollLeft, scrollTop, startRow, startCol, endRow, endCol)
-        continue
+      } else {
+        if (!isNullish(cell.mc)) {
+          mergeCells.push(cell)
+        }
+
+        if (isNullish(cell.v) || !isNullish(cell.v) && cell?.v?.toString().length === 0) {
+          this.drawNullCell(worksheet, r, c, sx, sy, ex, ey, offsetLeft, offsetTop, overflowMap, scrollLeft, scrollTop, startRow, startCol, endRow, endCol)
+        } else {
+          this.drawCell(worksheet, r, c, sx, sy, ex, ey, offsetLeft, offsetTop, overflowMap, scrollLeft, scrollTop, startRow, startCol, endRow, endCol)
+        }
       }
     }
 
@@ -324,7 +334,6 @@ export default class Content {
   drawNullCell(worksheet: Sheet, row: number, col: number, startAxisX: number, startAxisY: number, endAxisX: number, endAxisY: number, offsetLeft: number, offsetTop: number, overflowMap: Map<number, Map<number, any>>, scrollLeft: number, scrollTop: number, startRow: number, startCol: number, endRow: number, endCol: number) {
     // TODO: 背景色
     const cellOverflowInfo = this.getCellOverflowInfo(row, col, endCol, overflowMap)
-    console.info(cellOverflowInfo)
     if (cellOverflowInfo?.colLast) {
       const { mainCol, mainRow } = cellOverflowInfo
       this.drawOverflowCell(
@@ -341,15 +350,12 @@ export default class Content {
       )
     }
 
-    // 右边框
-    if (cellOverflowInfo && cellOverflowInfo.colLast) {
-      console.info(row, col)
-    }
     if ((cellOverflowInfo && cellOverflowInfo.colLast) || !cellOverflowInfo) {
       this.ctx.save()
       this.ctx.translate(offsetLeft, offsetTop)
       this.ctx.strokeStyle = '#dfdfdf'
       this.ctx.lineWidth = 1
+      this.ctx.beginPath()
       this.ctx.moveTo(endAxisX - 0.5, endAxisY - 0.5)
       this.ctx.lineTo(endAxisX - 0.5, startAxisY)
       this.ctx.stroke()
@@ -361,6 +367,7 @@ export default class Content {
     this.ctx.translate(offsetLeft, offsetTop)
     this.ctx.strokeStyle = '#dfdfdf'
     this.ctx.lineWidth = 1
+    this.ctx.beginPath()
     this.ctx.moveTo(startAxisX, endAxisY - 0.5)
     this.ctx.lineTo(endAxisX - 0.5, endAxisY - 0.5)
     this.ctx.stroke()
@@ -408,11 +415,31 @@ export default class Content {
     this.ctx.restore()
   }
 
-  drawText(textInfo: any, startAxisX: number, startAxisY: number) {
-    const { values } = textInfo
+  drawCell(worksheet: Sheet, row: number, col: number, startAxisX: number, startAxisY: number, endAxisX: number, endAxisY: number, offsetLeft: number, offsetTop: number, overflowMap: Map<number, Map<number, any>>, scrollLeft: number, scrollTop: number, startRow: number, startCol: number, endRow: number, endCol: number) {
+    const cell = worksheet.cells[row][col]
+    if (!cell) {
+      return
+    }
+    const textInfo = getCellTextInfo(this.ctx, cell, {
+      textAreaWidth: endAxisX - startAxisX,
+      textAreaHeight: endAxisY - startAxisY,
+      mainRow: row,
+      mainCol: col,
+      leading: 2,
+      letterSpacing: 2,
+    })
 
-    for (let i = 0; i < values.length; i++) {
-      const { text, top, left } = values[i]
+    this.ctx.save()
+    this.ctx.translate(offsetLeft, offsetTop)
+    this.drawText(textInfo, startAxisX, startAxisY)
+    this.ctx.restore()
+  }
+
+  drawText(textInfo: any, startAxisX: number, startAxisY: number) {
+    const { lines } = textInfo
+
+    for (let i = 0; i < lines.length; i++) {
+      const { text, top, left } = lines[i]
       this.ctx.fillText(text, startAxisX + left, startAxisY + top)
     }
   }
