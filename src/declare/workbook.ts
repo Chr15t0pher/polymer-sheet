@@ -9,7 +9,7 @@ export enum DataType {
 
 export enum TextWrap {
   break = 'break', // 截断
-  auto = 'auto',   // 自动换行
+  auto = 'auto', // 自动换行
   overflow = 'overflow' // 溢出
 }
 

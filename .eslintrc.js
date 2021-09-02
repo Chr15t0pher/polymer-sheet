@@ -31,8 +31,10 @@ module.exports = {
       'error',
       'never'
     ],
-    'no-trailing-spaces': [
-      'error'
-    ]
+    'no-trailing-spaces': 'error',
+    'no-multi-spaces': 'error',
+    'camelcase': 'error',
+    'space-before-function-paren': ['error', 'never'],
+    'space-before-blocks': 'error'
   }
 }

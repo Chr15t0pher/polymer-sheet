@@ -1,5 +1,5 @@
 import { Cell, TextAlign, TextBaseline, TextWrap } from '../declare'
-import { isEnglish, isChinese } from './validate'
+import { isEnglish, isChinese } from './validators'
 
 // TODO: 把水平和垂直的字符间距摘出来成配置项
 const horizontalSpace = 2

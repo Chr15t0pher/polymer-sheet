@@ -1,6 +1,6 @@
 import type { PolymerSheet } from './PolymerSheet'
 import { Sheet, DataType, TextWrap, TextAlign } from '../declare'
-import { d, position_binary_search, transNumToColumnIdx, isNullish, getCellTextInfo } from '../utils'
+import { d, findCellPosition, transNumToColumnIdx, isNullish, getCellTextInfo } from '../utils'
 
 export default class Content {
   containerId = '#polymersheet__view'
@@ -48,8 +48,8 @@ export default class Content {
     const horizontalLinesPosition = this.polymersheet.store.horizontalLinesPosition
     const rowHeaderWidth = this.polymersheet.store.rowHeaderWidth!
 
-    let startRow = position_binary_search(horizontalLinesPosition, scrollTop)
-    let endRow = position_binary_search(horizontalLinesPosition, scrollTop + contentHeight)
+    let startRow = findCellPosition(horizontalLinesPosition, scrollTop)
+    let endRow = findCellPosition(horizontalLinesPosition, scrollTop + contentHeight)
 
     if (startRow === -1) {
       startRow = 0
@@ -72,21 +72,21 @@ export default class Content {
 
       const preCurrentRowEndAxisY = i === 0 ? -scrollTop : horizontalLinesPosition[i - 1] - scrollTop
       const currentRowEndAxisY = horizontalLinesPosition[i] - scrollTop
-      
+
       // vertical lines
       this.ctx.beginPath()
       this.ctx.moveTo(rowHeaderWidth - 0.5, preCurrentRowEndAxisY - 1)
       this.ctx.lineTo(rowHeaderWidth - 0.5, currentRowEndAxisY - 1)
       this.ctx.closePath()
       this.ctx.stroke()
-      
+
       // horizontal lines
       this.ctx.beginPath()
       this.ctx.moveTo(0, currentRowEndAxisY)
       this.ctx.lineTo(rowHeaderWidth, currentRowEndAxisY - 0.5)
       this.ctx.closePath()
       this.ctx.stroke()
-      
+
       // content
       this.ctx.textAlign = 'center'
       this.ctx.textBaseline = 'middle'
@@ -104,8 +104,8 @@ export default class Content {
     const verticalLinesPosition = this.polymersheet.store.verticalLinesPosition
     const columnHeaderHeight = this.polymersheet.store.columnHeaderHeight!
 
-    let startCol = position_binary_search(verticalLinesPosition, scrollLeft)
-    let endCol = position_binary_search(verticalLinesPosition, scrollLeft + contentWidth)
+    let startCol = findCellPosition(verticalLinesPosition, scrollLeft)
+    let endCol = findCellPosition(verticalLinesPosition, scrollLeft + contentWidth)
 
     if (startCol === -1) {
       startCol = 0
@@ -119,7 +119,7 @@ export default class Content {
     this.ctx.translate(offsetLeft, 0)
     this.ctx.strokeStyle = '#dfdfdf'
     this.ctx.lineWidth = 1
-  
+
     for (let i = startCol; i <= endCol; i++) {
       if (worksheet.colsHidden && worksheet.colsHidden.includes(i)) {
         continue
@@ -136,7 +136,7 @@ export default class Content {
       this.ctx.stroke()
 
       // horizontal lines
-      this.ctx.beginPath()     
+      this.ctx.beginPath()
       this.ctx.moveTo(preCurrentColEndAxisX, columnHeaderHeight - 0.5)
       this.ctx.lineTo(currentColEndAxisX, columnHeaderHeight - 0.5)
       this.ctx.closePath()
@@ -161,10 +161,10 @@ export default class Content {
     const contentHeight = this.polymersheet.store.contentHeight
     const { verticalLinesPosition, horizontalLinesPosition, defaultColWidth } = this.polymersheet.store
 
-    let startRow = position_binary_search(horizontalLinesPosition, scrollTop)
-    let endRow = position_binary_search(horizontalLinesPosition, scrollTop + contentHeight)
-    let startCol = position_binary_search(verticalLinesPosition, scrollLeft)
-    let endCol = position_binary_search(verticalLinesPosition, scrollLeft + contentWidth)
+    let startRow = findCellPosition(horizontalLinesPosition, scrollTop)
+    let endRow = findCellPosition(horizontalLinesPosition, scrollTop + contentHeight)
+    let startCol = findCellPosition(verticalLinesPosition, scrollLeft)
+    let endCol = findCellPosition(verticalLinesPosition, scrollLeft + contentWidth)
 
     if (startRow === -1) {
       startRow = 0
@@ -187,7 +187,7 @@ export default class Content {
     const cellsUpdate: any = []
     const mergeCache: any = {}
     const borderOffset: any = {}
-  
+
     for (let r = startRow; r <= endRow; r++) {
       if (worksheet.rowsHidden && worksheet.rowsHidden.includes(r)) {
         continue
@@ -222,7 +222,7 @@ export default class Content {
             } else {
               const key = value.mc?.rs + '_' + value.mc?.cs
               const mergeMain = cellsUpdate[mergeCache[key]]
-              
+
               if (c === mergeMain.c) {
                 mergeMain.ey += endAxisY - startAxisY
               }
@@ -244,7 +244,7 @@ export default class Content {
           ex: endAxisX,
           ey: endAxisY,
           columnWidth,
-        })        
+        })
       }
     }
 
@@ -274,7 +274,7 @@ export default class Content {
 
           const startAxisX = col === 0 ? -scrollLeft : verticalLinesPosition[col - 1] - scrollLeft
           const endAxisX = verticalLinesPosition[col] - scrollLeft
-          
+
           let intervalLeftCol = col
           let intervalRightCol = col
 
@@ -377,7 +377,7 @@ export default class Content {
   drawOverflowCell(worksheet: Sheet,  mainRow: number, mainCol: number, startCol: number, endCol: number, overflowMap: Map<number, Map<number, any>>, scrollLeft: number, scrollTop: number, offsetLeft: number, offsetTop: number) {
     let startAxisX
     let startAxisY
-  
+
     if (mainCol === 0) {
       startAxisX = -scrollLeft
     } else {
@@ -417,7 +417,7 @@ export default class Content {
 
   drawCell(worksheet: Sheet, row: number, col: number, startAxisX: number, startAxisY: number, endAxisX: number, endAxisY: number, offsetLeft: number, offsetTop: number, overflowMap: Map<number, Map<number, any>>, scrollLeft: number, scrollTop: number, startRow: number, startCol: number, endRow: number, endCol: number) {
     const cell = worksheet.cells[row][col]
-    
+
     if (!cell) {
       return
     }
@@ -495,7 +495,7 @@ export default class Content {
     if (!isNullish(worksheet.cells[curRow][nextCol]?.mc) || !isNullish(worksheet.cells[curRow][nextCol]?.v)) {
       return nextCol
     }
-    
+
     const curColStartAxisX = curCol === 0 ? 0 : this.polymersheet.store.verticalLinesPosition[curCol - 1]
     const curColEndAxisX = this.polymersheet.store.verticalLinesPosition[curCol]
 
@@ -514,7 +514,7 @@ export default class Content {
     } else {
       intervalLeft -= w / 2
     }
-      
+
     if (curCol < nextCol) {
       // backward
       if (intervalRight > tracedColEndAxisX) {

@@ -1,4 +1,3 @@
-// eslint-disable-next-line import/no-extraneous-dependencies
 import TerserPlugin from 'terser-webpack-plugin'
 import CSSMinimizerPlugin from 'css-minimizer-webpack-plugin'
 import { Configuration, WebpackPluginInstance } from 'webpack'
