@@ -9,7 +9,7 @@ const rt = 0
 export function getCellTextInfo(ctx: CanvasRenderingContext2D, cell: Cell, options: { textAreaWidth: number, textAreaHeight: number, mainRow: number, mainCol: number, leading: number, letterSpacing: number }) {
   const textAlign = cell.s?.ta || TextAlign.start
   const textBaseline = cell.s?.tba || TextBaseline.middle
-  const value = cell.v === void 0 || cell.v === null ? null : cell.w === void 0 || cell.w === null ? cell.v.toString() : cell.w 
+  const value = cell.v === void 0 || cell.v === null ? null : cell.w === void 0 || cell.w === null ? cell.v.toString() : cell.w
   const textWrap = cell.s === void 0 || cell.s === null || cell.s.tw === void 0 || cell.s.tw === null ? TextWrap.break : cell.s.tw
   const { textAreaHeight, textAreaWidth, leading, letterSpacing } = options
   const textInfo: any = { lines: [] }
@@ -45,7 +45,7 @@ export function getCellTextInfo(ctx: CanvasRenderingContext2D, cell: Cell, optio
         }
       }
     }
-  
+
     const lines = []
     let line = ''
     for (let i = 0; i < words.length; i++) {
@@ -59,7 +59,7 @@ export function getCellTextInfo(ctx: CanvasRenderingContext2D, cell: Cell, optio
         line = words[i]
       } else {
         line += words[i]
-      }         
+      }
       if (i === words.length - 1 && line.length > 0) {
         lines.push(line)
       }
@@ -86,7 +86,7 @@ export function getCellTextInfo(ctx: CanvasRenderingContext2D, cell: Cell, optio
         left,
         textHeight: lineHeight,
         textWidth: lineWidth,
-      })                      
+      })
     }
     console.info(allLinesHeight)
   } else {
@@ -96,7 +96,7 @@ export function getCellTextInfo(ctx: CanvasRenderingContext2D, cell: Cell, optio
     const textWidth = width
     const textHeight = actualBoundingBoxAscent + actualBoundingBoxDescent
 
-    let left = letterSpacing 
+    let left = letterSpacing
     if (textAlign === TextAlign.center) {
       left = (textAreaWidth - textWidth) / 2
     } else if (textAlign === TextAlign.end) {
@@ -114,7 +114,7 @@ export function getCellTextInfo(ctx: CanvasRenderingContext2D, cell: Cell, optio
       text: value,
       top,
       left,
-      textHeight, 
+      textHeight,
       textWidth,
     })
 
