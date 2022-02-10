@@ -84,19 +84,14 @@ export interface Cell {
   mc?: Range
 }
 
-export interface SheetId extends String {
-  id: 'sheet'
-}
+export type SheetId = string | number | symbol
+
 export interface Sheet {
   id: SheetId
 
   cells: Array<null | Cell>[]
   // styles: PolymerSheetLayoutStyle
-  merges: []
-
-  defaultRowHeight?: number
-
-  defaultColWidth?: number
+  merges?: []
 
   rowsHeightMap?: Record<number, number>
 
@@ -116,14 +111,18 @@ export interface PolymerSheetOptions {
 
   sheets: Sheet[]
 
-  toolbarHeight?: number
+  /** default current worksheet id */
+  worksheetId: SheetId
 
-  rowHeaderWidth?: number
-  columnHeaderHeight?: number
+  toolbarHeight: number
 
-  scrollbarSize?: number
+  rowHeaderWidth: number
+  columnHeaderHeight: number
 
-  bottomBarHeight?: number
+  defaultRowHeight: number
+  defaultColWidth: number
 
-  worksheetId?: SheetId
+  scrollbarSize: number
+
+  bottomBarHeight: number
 }

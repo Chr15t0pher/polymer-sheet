@@ -1,28 +1,35 @@
 import type { PolymerSheetOptions } from '../declare'
 
 export interface Store extends PolymerSheetOptions {
+
+  /** 画布css宽高 */
   contentWidth: number
   contentHeight: number
 
   devicePixelRatio: number
 
+  /** 表格缩放*/
   zoomRatio: number
 
-  defaultRowHeight: number
-  defaultColWidth: number
-
+  /** 选中表格实际宽高 */
   worksheetActualWidth: number
   worksheetActualHeight: number
 
+  /**选中表格垂直和水平表格线的实际位置 */
   horizontalLinesPosition: number[]
   verticalLinesPosition: number[]
 
+  /** 文本换行溢出位置记录 */
   overflowMap: Map<number, { curCol: number, startCol: number, endCol: number }>
 }
+
+export const PLACEHOLDER_WORKSHEET_ID = -1
 
 // store 中的宽高是内容 + border 的总宽高
 const store: Store = {
   containerId: 'polymer_sheet',
+
+  worksheetId: PLACEHOLDER_WORKSHEET_ID,
 
   sheets: [],
 
@@ -31,32 +38,26 @@ const store: Store = {
   rowHeaderWidth: 40,
   columnHeaderHeight: 20,
 
+  defaultRowHeight: 20,
+  defaultColWidth: 74,
+
   scrollbarSize: 12,
 
   bottomBarHeight: 42,
 
-  // 画布css宽高
   contentWidth: 0,
   contentHeight: 0,
 
   devicePixelRatio: 1,
 
-  // 表格缩放
   zoomRatio: 1,
 
-  // 默认 cell 宽高
-  defaultRowHeight: 20,
-  defaultColWidth: 74,
-
-  // 选中表格实际宽高
   worksheetActualWidth: 0,
   worksheetActualHeight: 0,
 
-  // 选中表格垂直和水平表格线的实际位置
   horizontalLinesPosition: [],
   verticalLinesPosition: [],
 
-  // 文本换行溢出位置记录
   overflowMap: new Map(),
 }
 

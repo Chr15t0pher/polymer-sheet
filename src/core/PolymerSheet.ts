@@ -2,7 +2,7 @@ import store from './Store'
 import Content from './Content'
 import ToolBar from './ToolBar'
 import BottomBar from './BottomBar'
-import { merge, d, isNullish } from '../utils'
+import { mergeOptions, d, isNullish } from '../utils'
 import { PolymerSheetOptions, Sheet, SheetId } from '../declare'
 import './index.styl'
 
@@ -15,15 +15,21 @@ export class PolymerSheet {
 
   bottomBar!: BottomBar
 
-  constructor(options: PolymerSheetOptions) {
-    this.store = merge(this.store, options)
+  constructor(options: Partial<PolymerSheetOptions>) {
+    this.store = mergeOptions(this.store, options)
     this.toolbar = new ToolBar(this)
     this.content = new Content(this)
     this.bottomBar = new BottomBar()
 
-    if (this.store.sheets.length > 0) {
-      this.setWorksheet(this.store.worksheetId || this.store.sheets[0].id)
+    const { sheets, worksheetId } = this.store
+
+    if (sheets.length > 0) {
+      const defaultWorksheetId = sheets.some((sheet) => sheet.id === worksheetId)
+        ? worksheetId
+        : sheets[0].id
+      this.setWorksheet(defaultWorksheetId)
     }
+
   }
 
   render() {
@@ -37,58 +43,62 @@ export class PolymerSheet {
   setWorksheet(sheetId: SheetId) {
     this.store.worksheetId = sheetId
     const worksheet = this.getWorksheet()
-    this.setWorksheetActualSize(worksheet)
+    if (worksheet) {
+      this.setWorksheetActualSize(worksheet)
+    }
   }
 
   getWorksheet() {
-    if (this.store.worksheetId) {
-      for (let i = 0; i < this.store.sheets.length; i++) {
-        if (this.store.worksheetId === this.store.sheets[i].id) {
-          return this.store.sheets[i]
-        }
-      }
-    }
-    return this.store.sheets[0]
+    return this.store.sheets.filter(sheet => sheet.id === this.store.worksheetId)[0]
   }
 
   renderSkeleton() {
-    const container = d(this.store.containerId)
-    const ContainerHeight = container.height()
-    const ContainerWidth = container.width()
+    const {
+      containerId,
+      rowHeaderWidth,
+      toolbarHeight,
+      columnHeaderHeight,
+      bottomBarHeight,
+      scrollbarSize
+    } = this.store
 
-    const cellsOverlayWidth = ContainerWidth - this.store.rowHeaderWidth!
-    const cellsOverlayHeight = ContainerHeight - (this.store.toolbarHeight! + this.store.columnHeaderHeight! + this.store.bottomBarHeight!)
+    const container = d(containerId)
+    const containerHeight = container.height()
+    const containerWidth = container.width()
 
-    const verticalScrollbarHeight = cellsOverlayHeight + this.store.columnHeaderHeight! - this.store.scrollbarSize!
+    const cellsOverlayWidth = containerWidth - rowHeaderWidth
+    const cellsOverlayHeight = containerHeight - (toolbarHeight + columnHeaderHeight + bottomBarHeight)
+
+    const verticalScrollbarHeight = cellsOverlayHeight + columnHeaderHeight - scrollbarSize
     const horizontalScrollbarWidth = cellsOverlayWidth
 
-    this.store.contentWidth = ContainerWidth - this.store.scrollbarSize!
-    this.store.contentHeight = ContainerHeight - (this.store.scrollbarSize! + this.store.toolbarHeight! + this.store.bottomBarHeight!)
+    this.store.contentWidth = containerWidth - scrollbarSize
+    this.store.contentHeight = containerHeight - (scrollbarSize + toolbarHeight + bottomBarHeight)
 
     container.append (`
-      <div id="polymersheet" style="width: ${ContainerWidth}px; height: ${ContainerHeight}px">
-        <div id="polymersheet__toolbar" style="height: ${this.store.toolbarHeight}px">
+      <div id="polymersheet" style="width: ${containerWidth}px; height: ${containerHeight}px">
+        <div id="polymersheet__toolbar" style="height: ${toolbarHeight}px">
         </div>
         <div id="polymersheet__view">
           <canvas id="polymersheet__content" width="${this.store.contentWidth * this.store.devicePixelRatio}" height="${this.store.contentHeight * this.store.devicePixelRatio}" style="width: ${this.store.contentWidth}px; height: ${this.store.contentHeight}px"></canvas>
           <table>
             <tr>
               <td class="polymersheet__view_grid">
-                <div class="polymersheet__upper_left_corner" style="width: ${this.store.rowHeaderWidth}px; height: ${this.store.columnHeaderHeight}px;"></div>
+                <div class="polymersheet__upper_left_corner" style="width: ${rowHeaderWidth}px; height: ${columnHeaderHeight}px;"></div>
               </td>
               <td class="polymersheet__view_grid">
-                <div class="polymersheet__col_header" style="width: ${cellsOverlayWidth}px; height: ${this.store.columnHeaderHeight}px; "></div>
+                <div class="polymersheet__col_header" style="width: ${cellsOverlayWidth}px; height: ${columnHeaderHeight}px; "></div>
               </td>
             </tr>
             <tr>
               <td class="polymersheet__view_grid">
-                <div class="polymersheet__column_header" style="width: ${this.store.rowHeaderWidth}px; height: ${cellsOverlayHeight}px"></div>
+                <div class="polymersheet__column_header" style="width: ${rowHeaderWidth}px; height: ${cellsOverlayHeight}px"></div>
               </td>
               <td class="polymersheet__view_grid">
-                <div class="polymersheet__scrollbar polymersheet__scrollbar-vertical" style="width: ${this.store.scrollbarSize}px; height: ${verticalScrollbarHeight}px; right: 0px; top: 0px;">
+                <div class="polymersheet__scrollbar polymersheet__scrollbar-vertical" style="width: ${scrollbarSize}px; height: ${verticalScrollbarHeight}px; right: 0px; top: 0px;">
                   <div style="height: ${this.store.worksheetActualHeight}px"></div>
                 </div>
-                <div class="polymersheet__scrollbar polymersheet__scrollbar-horizontal" style="width: ${horizontalScrollbarWidth}px; height: ${this.store.scrollbarSize}px; right: 0px; bottom: 0px;">
+                <div class="polymersheet__scrollbar polymersheet__scrollbar-horizontal" style="width: ${horizontalScrollbarWidth}px; height: ${scrollbarSize}px; right: 0px; bottom: 0px;">
                   <div style="width: ${this.store.worksheetActualWidth}px"></div>
                 </div>
                 <div class="polymersheet__cells_overlay" style="width: ${cellsOverlayWidth}px; height: ${cellsOverlayHeight}px"></div>

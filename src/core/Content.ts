@@ -35,18 +35,15 @@ export default class Content {
     this.ctx.lineWidth = 1
 
     this.ctx.beginPath()
-    this.ctx.moveTo(0, columnHeaderHeight! - 0.5)
-    this.ctx.lineTo(rowHeaderWidth! - 0.5, columnHeaderHeight! - 0.5)
-    this.ctx.lineTo(rowHeaderWidth! - 0.5, 0)
+    this.ctx.moveTo(0, columnHeaderHeight - 0.5)
+    this.ctx.lineTo(rowHeaderWidth - 0.5, columnHeaderHeight - 0.5)
+    this.ctx.lineTo(rowHeaderWidth - 0.5, 0)
     this.ctx.stroke()
     this.ctx.restore()
   }
 
   drawRowHeader(worksheet: Sheet, scrollTop = 0) {
-    const offsetTop = this.polymersheet.store.columnHeaderHeight!
-    const contentHeight = this.polymersheet.store.contentHeight!
-    const horizontalLinesPosition = this.polymersheet.store.horizontalLinesPosition
-    const rowHeaderWidth = this.polymersheet.store.rowHeaderWidth!
+    const { columnHeaderHeight: offsetTop, contentHeight, horizontalLinesPosition, rowHeaderWidth } = this.polymersheet.store
 
     let startRow = findCellPosition(horizontalLinesPosition, scrollTop)
     let endRow = findCellPosition(horizontalLinesPosition, scrollTop + contentHeight)
@@ -99,10 +96,7 @@ export default class Content {
   }
 
   drawColumnHeader(worksheet: Sheet, scrollLeft = 0) {
-    const offsetLeft = this.polymersheet.store.rowHeaderWidth!
-    const contentWidth = this.polymersheet.store.contentWidth
-    const verticalLinesPosition = this.polymersheet.store.verticalLinesPosition
-    const columnHeaderHeight = this.polymersheet.store.columnHeaderHeight!
+    const { rowHeaderWidth: offsetLeft, contentWidth, verticalLinesPosition, columnHeaderHeight } = this.polymersheet.store
 
     let startCol = findCellPosition(verticalLinesPosition, scrollLeft)
     let endCol = findCellPosition(verticalLinesPosition, scrollLeft + contentWidth)
@@ -155,11 +149,15 @@ export default class Content {
   }
 
   drawContent(worksheet: Sheet, scrollTop = 0, scrollLeft = 0) {
-    const offsetLeft = this.polymersheet.store.rowHeaderWidth!
-    const offsetTop = this.polymersheet.store.columnHeaderHeight!
-    const contentWidth = this.polymersheet.store.contentWidth
-    const contentHeight = this.polymersheet.store.contentHeight
-    const { verticalLinesPosition, horizontalLinesPosition, defaultColWidth } = this.polymersheet.store
+    const {
+      columnHeaderHeight: offsetTop,
+      rowHeaderWidth: offsetLeft,
+      contentWidth,
+      contentHeight,
+      verticalLinesPosition,
+      horizontalLinesPosition,
+      defaultColWidth
+    } = this.polymersheet.store
 
     let startRow = findCellPosition(horizontalLinesPosition, scrollTop)
     let endRow = findCellPosition(horizontalLinesPosition, scrollTop + contentHeight)
@@ -214,7 +212,7 @@ export default class Content {
         }
 
         if (worksheet.cells[r][c] !== null) {
-          const value = worksheet.cells[r][c]!
+          const value = worksheet.cells[r][c]
 
           if (!isNullish(value) && 'mc' in value) {
             if (value.t !== DataType.Empty) {
@@ -374,7 +372,7 @@ export default class Content {
     this.ctx.restore()
   }
 
-  drawOverflowCell(worksheet: Sheet,  mainRow: number, mainCol: number, startCol: number, endCol: number, overflowMap: Map<number, Map<number, any>>, scrollLeft: number, scrollTop: number, offsetLeft: number, offsetTop: number) {
+  drawOverflowCell(worksheet: Sheet, mainRow: number, mainCol: number, startCol: number, endCol: number, overflowMap: Map<number, Map<number, any>>, scrollLeft: number, scrollTop: number, offsetLeft: number, offsetTop: number) {
     let startAxisX
     let startAxisY
 

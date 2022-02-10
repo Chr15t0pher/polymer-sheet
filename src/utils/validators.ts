@@ -1,4 +1,4 @@
-export function isNullish(value: any) {
+export function isNullish(value: any): value is null | undefined {
   return value === void 0 || value === null
 }
 
