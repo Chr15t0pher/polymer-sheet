@@ -1,11 +1,11 @@
 
 import { isNullish } from './validators'
 
-export function mergeOptions<T extends Dictionary, U extends T>(
-  defaults: U,
-  config: T
+export function mergeOptions<T extends Dictionary, U extends Dictionary>(
+  defaults: T,
+  config: U
 ) {
-  const res = {...defaults}
+  const res = {...defaults} as T & U
 
   for (const key in config) {
     const value = config[key]
