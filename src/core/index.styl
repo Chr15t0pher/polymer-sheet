@@ -1,3 +1,7 @@
+border-color = #dadce0
+scrollbar-size = 10px
+shim-background-color = lighten(border-color, 70%)
+
 html, body, div, span, applet, object, iframe,
 h1, h2, h3, h4, h5, h6, p, blockquote, pre,
 a, abbr, acronym, address, big, cite, code,
@@ -17,6 +21,7 @@ time, mark, audio, video
 	font-size: 100%
 	font: inherit
 	vertical-align: baseline
+	box-sizing: border-box
 
 /* HTML5 display-role reset for older browsers */
 article, aside, details, figcaption, figure,
@@ -37,6 +42,9 @@ q:before, q:after
 	content: ''
 	content: none
 
+html
+	overflow: hidden
+
 table
 	border-collapse: collapse
 	border-spacing: 0
@@ -44,12 +52,78 @@ table
 #polymersheet__view
 	position: relative
 
+.polymersheet__upper_left_corner
+	background: white
+	border: 1px solid border-color
+	border-top-width: 0
+	border-left-width: 0
+
 #polymersheet__content
 	position: absolute
 
 #polymersheet__toolbar
-	border-bottom: 1px solid #dadce0
+	border-bottom: 1px solid border-color
+
+.polymersheet__view_grid
+	position: relative
+	font-size: 0
+
+.polymersheet__header--col,
+.polymersheet__header_shim--col
+	display: inline-block
+
+.polymersheet__header_shim--col,
+.polymersheet__header_shim--row
+	background: shim-background-color
+	border: 1px solid border-color
+
+.polymersheet__header_shim--col
+	border-top-width: 0
 
 .polymersheet__scrollbar
 	position: absolute
-	background: red;
+	border: 1px solid border-color
+	background: white
+
+	&::-webkit-scrollbar-thumb
+		border-radius: (scrollbar-size / 2)px
+		border: 1px solid white
+		background: darken(border-color, 10%)
+		&:hover
+			background: darken(border-color, 20%)
+
+	&::-webkit-scrollbar-button
+		display: none
+
+	&--vertical
+		top: 0
+		right: 0
+		border-top-width: 0
+		border-bottom-width: 0
+		overflow: hidden scroll
+
+		> div
+			width: 1px
+
+		&::-webkit-scrollbar
+			width: scrollbar-size
+
+	&--horizontal
+		right: 0
+		bottom: 0
+		border-left-width: 0
+		overflow-x: scroll
+
+		> div
+			height: 1px
+
+		&::-webkit-scrollbar
+			height: scrollbar-size
+			width: scrollbar-size + 1px
+
+		&::-webkit-scrollbar-corner
+			background: shim-background-color
+			border-left: 1px solid border-color
+
+
+

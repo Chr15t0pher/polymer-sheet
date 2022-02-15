@@ -19,13 +19,15 @@ export default class Content {
   }
 
   draw() {
+    const { contentHeight, contentWidth } = this.polymersheet.store
+    this.ctx.clearRect(0, 0, contentWidth, contentHeight)
     const worksheet = this.polymersheet.getWorksheet()
     const { scrollLeft, scrollTop } = worksheet
 
     this.drawUpperLeftCorner()
+    this.drawContent(worksheet, scrollTop, scrollLeft)
     this.drawRowHeader(worksheet, scrollTop)
     this.drawColumnHeader(worksheet, scrollLeft)
-    this.drawContent(worksheet, scrollLeft, scrollTop)
   }
 
   drawUpperLeftCorner() {
@@ -43,7 +45,7 @@ export default class Content {
   }
 
   drawRowHeader(worksheet: Sheet, scrollTop = 0) {
-    const { columnHeaderHeight: offsetTop, contentHeight, horizontalLinesPosition, rowHeaderWidth } = this.polymersheet.store
+    const { columnHeaderHeight, contentHeight, horizontalLinesPosition, rowHeaderWidth } = this.polymersheet.store
 
     let startRow = findCellPosition(horizontalLinesPosition, scrollTop)
     let endRow = findCellPosition(horizontalLinesPosition, scrollTop + contentHeight)
@@ -56,9 +58,9 @@ export default class Content {
       endRow = horizontalLinesPosition.length - 1
     }
 
-    this.ctx.clearRect(0, offsetTop, rowHeaderWidth, contentHeight - offsetTop)
     this.ctx.save()
-    this.ctx.translate(0, offsetTop)
+    this.ctx.clearRect(0, 0, rowHeaderWidth, contentHeight)
+    this.ctx.translate(0, columnHeaderHeight)
     this.ctx.strokeStyle = '#dfdfdf'
     this.ctx.lineWidth = 1
 
@@ -96,7 +98,8 @@ export default class Content {
   }
 
   drawColumnHeader(worksheet: Sheet, scrollLeft = 0) {
-    const { rowHeaderWidth: offsetLeft, contentWidth, verticalLinesPosition, columnHeaderHeight } = this.polymersheet.store
+    const { rowHeaderWidth, contentWidth, verticalLinesPosition, columnHeaderHeight } = this.polymersheet.store
+    const offsetLeft = rowHeaderWidth + scrollLeft
 
     let startCol = findCellPosition(verticalLinesPosition, scrollLeft)
     let endCol = findCellPosition(verticalLinesPosition, scrollLeft + contentWidth)
@@ -108,11 +111,11 @@ export default class Content {
       endCol = verticalLinesPosition.length - 1
     }
 
-    this.ctx.clearRect(offsetLeft, 0, contentWidth - offsetLeft, columnHeaderHeight)
+    this.ctx.clearRect(0, 0, contentWidth - offsetLeft, columnHeaderHeight)
     this.ctx.save()
-    this.ctx.translate(offsetLeft, 0)
     this.ctx.strokeStyle = '#dfdfdf'
     this.ctx.lineWidth = 1
+    this.ctx.translate(rowHeaderWidth, 0)
 
     for (let i = startCol; i <= endCol; i++) {
       if (worksheet.colsHidden && worksheet.colsHidden.includes(i)) {
@@ -150,8 +153,8 @@ export default class Content {
 
   drawContent(worksheet: Sheet, scrollTop = 0, scrollLeft = 0) {
     const {
-      columnHeaderHeight: offsetTop,
-      rowHeaderWidth: offsetLeft,
+      columnHeaderHeight,
+      rowHeaderWidth,
       contentWidth,
       contentHeight,
       verticalLinesPosition,
@@ -163,6 +166,13 @@ export default class Content {
     let endRow = findCellPosition(horizontalLinesPosition, scrollTop + contentHeight)
     let startCol = findCellPosition(verticalLinesPosition, scrollLeft)
     let endCol = findCellPosition(verticalLinesPosition, scrollLeft + contentWidth)
+
+    console.info('startRow-------')
+    console.info(startRow)
+    console.info('startRow-------')
+
+    const offsetTop = columnHeaderHeight + scrollTop
+    const offsetLeft = rowHeaderWidth + scrollLeft
 
     if (startRow === -1) {
       startRow = 0
@@ -202,8 +212,6 @@ export default class Content {
         const startAxisX = c === 0 ? -scrollLeft : verticalLinesPosition[c - 1] - scrollLeft
         const endAxisX = verticalLinesPosition[c] - scrollLeft
 
-        const columnWidth = worksheet.colsWidthMap && worksheet.colsWidthMap[c] ? worksheet.colsWidthMap[c] : defaultColWidth
-
         borderOffset[r + '_' + c] = {
           sx: startAxisX,
           sy: startAxisY,
@@ -221,13 +229,12 @@ export default class Content {
               const key = value.mc?.rs + '_' + value.mc?.cs
               const mergeMain = cellsUpdate[mergeCache[key]]
 
-              if (c === mergeMain.c) {
+              if (c === mergeMain?.c) {
                 mergeMain.ey += endAxisY - startAxisY
               }
 
-              if (r === mergeMain.r) {
+              if (r === mergeMain?.r) {
                 mergeMain.ex += endAxisX - startAxisX
-                mergeMain.columnWidth += columnWidth
               }
               continue
             }
@@ -241,10 +248,11 @@ export default class Content {
           sy: startAxisY,
           ex: endAxisX,
           ey: endAxisY,
-          columnWidth,
         })
       }
     }
+
+    console.info(cellsUpdate)
 
     const overflowMap = new Map()
 
@@ -305,8 +313,6 @@ export default class Content {
       }
     }
 
-    const mergeCells = []
-
     // 绘制
     for (let cellsUpdateIdx = 0; cellsUpdateIdx < cellsUpdate.length; cellsUpdateIdx++) {
       const { r, c, sx, sy, ex, ey } = cellsUpdate[cellsUpdateIdx]
@@ -314,10 +320,6 @@ export default class Content {
       if (!cell) {
         this.drawNullCell(worksheet, r, c, sx, sy, ex, ey, offsetLeft, offsetTop, overflowMap, scrollLeft, scrollTop, startRow, startCol, endRow, endCol)
       } else {
-        if (!isNullish(cell.mc)) {
-          mergeCells.push(cell)
-        }
-
         if (isNullish(cell.v) || !isNullish(cell.v) && cell?.v?.toString().length === 0) {
           this.drawNullCell(worksheet, r, c, sx, sy, ex, ey, offsetLeft, offsetTop, overflowMap, scrollLeft, scrollTop, startRow, startCol, endRow, endCol)
         } else {
@@ -350,7 +352,7 @@ export default class Content {
 
     if ((cellOverflowInfo && cellOverflowInfo.colLast) || !cellOverflowInfo) {
       this.ctx.save()
-      this.ctx.translate(offsetLeft, offsetTop)
+      this.ctx.translate(offsetLeft - scrollLeft, offsetTop - scrollTop)
       this.ctx.strokeStyle = '#dfdfdf'
       this.ctx.lineWidth = 1
       this.ctx.beginPath()
@@ -362,7 +364,7 @@ export default class Content {
 
     // 底部边框
     this.ctx.save()
-    this.ctx.translate(offsetLeft, offsetTop)
+    this.ctx.translate(offsetLeft - scrollLeft, offsetTop - scrollTop)
     this.ctx.strokeStyle = '#dfdfdf'
     this.ctx.lineWidth = 1
     this.ctx.beginPath()
@@ -404,7 +406,7 @@ export default class Content {
     })
 
     this.ctx.save()
-    this.ctx.translate(offsetLeft, offsetTop)
+    this.ctx.translate(offsetLeft - scrollLeft, offsetTop - scrollTop)
 
     if (!isNullish(textInfo)) {
       this.drawText(textInfo, startAxisX, startAxisY)
@@ -453,7 +455,7 @@ export default class Content {
     })
 
     this.ctx.save()
-    this.ctx.translate(offsetLeft, offsetTop)
+    this.ctx.translate(offsetLeft - scrollLeft, offsetTop - scrollTop)
     this.drawText(textInfo, startAxisX, startAxisY)
 
     // 底部框

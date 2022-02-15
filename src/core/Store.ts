@@ -15,12 +15,15 @@ export interface Store extends PolymerSheetOptions {
   worksheetActualWidth: number
   worksheetActualHeight: number
 
-  /**选中表格垂直和水平表格线的实际位置 */
+  /** 选中表格垂直和水平表格线的实际位置 */
   horizontalLinesPosition: number[]
   verticalLinesPosition: number[]
 
   /** 文本换行溢出位置记录 */
   overflowMap: Map<number, { curCol: number, startCol: number, endCol: number }>
+
+  /** 滚动条宽度 */
+  scrollbarSize: number,
 }
 
 export const PLACEHOLDER_WORKSHEET_ID = -1
@@ -38,10 +41,9 @@ const store: Store = {
   rowHeaderWidth: 40,
   columnHeaderHeight: 20,
 
-  defaultRowHeight: 20,
+  // defaultRowHeight: 20,
+  defaultRowHeight: 200,
   defaultColWidth: 74,
-
-  scrollbarSize: 12,
 
   bottomBarHeight: 42,
 
@@ -59,6 +61,8 @@ const store: Store = {
   verticalLinesPosition: [],
 
   overflowMap: new Map(),
+
+  scrollbarSize: 12,
 }
 
 export default store

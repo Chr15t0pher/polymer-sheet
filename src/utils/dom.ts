@@ -22,7 +22,7 @@ class Dom {
         this.el.style[attr] = first[attr]
       }
     } else {
-      // @ts-expect-error fuck you!
+      // @ts-expect-error
       this.el.style[first] = second
     }
     return this

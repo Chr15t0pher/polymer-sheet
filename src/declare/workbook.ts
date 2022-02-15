@@ -122,7 +122,5 @@ export interface PolymerSheetOptions {
   defaultRowHeight: number
   defaultColWidth: number
 
-  scrollbarSize: number
-
   bottomBarHeight: number
 }
