@@ -167,10 +167,6 @@ export default class Content {
     let startCol = findCellPosition(verticalLinesPosition, scrollLeft)
     let endCol = findCellPosition(verticalLinesPosition, scrollLeft + contentWidth)
 
-    console.info('startRow-------')
-    console.info(startRow)
-    console.info('startRow-------')
-
     const offsetTop = columnHeaderHeight + scrollTop
     const offsetLeft = rowHeaderWidth + scrollLeft
 
@@ -258,7 +254,7 @@ export default class Content {
       }
     }
 
-    const overflowMap = new Map()
+    const { overflowMap } = this.polymersheet.store
 
     // 溢出单元格配置保存
     for (let row = startRow; row < endRow; row++) {
@@ -310,7 +306,7 @@ export default class Content {
               overflowMap.set(row, new Map())
             }
 
-            const colsOverflow = overflowMap.get(row)
+            const colsOverflow = overflowMap.get(row)!
             colsOverflow.set(col, item)
           }
         }
@@ -333,6 +329,10 @@ export default class Content {
     }
 
     this.ctx.restore()
+  }
+
+  inView(col: number, row: number, scrollleft: number, scrollTop: number) {
+    //
   }
 
   drawNullCell(worksheet: Sheet, row: number, col: number, startAxisX: number, startAxisY: number, endAxisX: number, endAxisY: number, offsetLeft: number, offsetTop: number, overflowMap: Map<number, Map<number, any>>, scrollLeft: number, scrollTop: number, startRow: number, startCol: number, endRow: number, endCol: number) {
@@ -460,7 +460,9 @@ export default class Content {
 
     this.ctx.save()
     this.ctx.translate(offsetLeft - scrollLeft, offsetTop - scrollTop)
-    this.drawText(textInfo, startAxisX, startAxisY)
+    if (!cellOverflowInfo) {
+      this.drawText(textInfo, startAxisX, startAxisY)
+    }
 
     // 底部框
     this.ctx.strokeStyle = '#dfdfdf'

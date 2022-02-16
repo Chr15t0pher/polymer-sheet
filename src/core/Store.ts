@@ -20,7 +20,7 @@ export interface Store extends PolymerSheetOptions {
   verticalLinesPosition: number[]
 
   /** 文本换行溢出位置记录 */
-  overflowMap: Map<number, { curCol: number, startCol: number, endCol: number }>
+  overflowMap: Map<number, Map<number, { row: number, intervalLeftCol: number, intervalRightCol: number }>>
 
   /** 滚动条宽度 */
   scrollbarSize: number,
