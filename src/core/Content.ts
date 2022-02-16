@@ -194,7 +194,6 @@ export default class Content {
 
     const cellsUpdate: any = []
     const mergeCache: any = {}
-    const borderOffset: any = {}
 
     for (let r = startRow; r <= endRow; r++) {
       if (worksheet.rowsHidden && worksheet.rowsHidden.includes(r)) {
@@ -212,32 +211,39 @@ export default class Content {
         const startAxisX = c === 0 ? -scrollLeft : verticalLinesPosition[c - 1] - scrollLeft
         const endAxisX = verticalLinesPosition[c] - scrollLeft
 
-        borderOffset[r + '_' + c] = {
-          sx: startAxisX,
-          sy: startAxisY,
-          ex: endAxisX,
-          ey: endAxisY,
-        }
 
         if (worksheet.cells[r][c] !== null) {
           const value = worksheet.cells[r][c]
 
           if (!isNullish(value) && 'mc' in value) {
-            if (value.t !== DataType.Empty) {
-              mergeCache[r + '_' + c] = cellsUpdate.length
-            } else {
-              const key = value.mc?.rs + '_' + value.mc?.cs
-              const mergeMain = cellsUpdate[mergeCache[key]]
-
-              if (c === mergeMain?.c) {
-                mergeMain.ey += endAxisY - startAxisY
+            const mergeMainRow = value.mc!.rs
+            const mergeMainCol = value.mc!.cs
+            const mergeCacheKey = mergeMainRow + '_' + mergeMainCol
+            if (isNaN(mergeCache[mergeCacheKey])) {
+              const mergeMainEndRow = value.mc!.rd
+              const mergeMainEndCol = value.mc!.cd
+              const mergeMainStartAxisX = mergeMainCol === 0 ? -scrollLeft : verticalLinesPosition[mergeMainCol - 1] - scrollLeft
+              const mergeMainEndAxisX = verticalLinesPosition[mergeMainCol] - scrollLeft
+              const mergeMainStartAxisY = mergeMainRow === 0 ? -scrollTop : horizontalLinesPosition[mergeMainRow - 1] - scrollTop
+              const mergeMainEndAxisY = horizontalLinesPosition[mergeMainRow] - scrollTop
+              const mergeMain = {
+                r: mergeMainRow,
+                c: mergeMainCol,
+                sx: mergeMainStartAxisX,
+                sy: mergeMainStartAxisY,
+                ex: mergeMainEndAxisX,
+                ey: mergeMainEndAxisY,
               }
-
-              if (r === mergeMain?.r) {
-                mergeMain.ex += endAxisX - startAxisX
+              for (let i = mergeMainRow + 1; i <= mergeMainEndRow; i++) {
+                mergeMain.ey += horizontalLinesPosition[i] - horizontalLinesPosition[i - 1]
               }
-              continue
+              for (let j = mergeMainCol + 1; j <= mergeMainEndCol; j++) {
+                mergeMain.ex += verticalLinesPosition[j] - verticalLinesPosition[j - 1]
+              }
+              mergeCache[mergeMainRow + '_' + mergeMainCol] = cellsUpdate.length
+              cellsUpdate.push(mergeMain)
             }
+            continue
           }
         }
 
@@ -251,8 +257,6 @@ export default class Content {
         })
       }
     }
-
-    console.info(cellsUpdate)
 
     const overflowMap = new Map()
 
