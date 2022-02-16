@@ -1,4 +1,4 @@
-import { PolymerSheet } from './core'
+import { PolymerSheet } from './ui'
 
 if (window) {
   window.PolymerSheet = PolymerSheet

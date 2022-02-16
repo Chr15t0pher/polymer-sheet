@@ -24,6 +24,7 @@ module.exports = {
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     '@typescript-eslint/ban-ts-comment': 'off',
     '@typescript-eslint/no-non-null-assertion': 'off',
+    '@typescript-eslint/no-explicit-any': 'off',
     quotes: [
       'error',
       'single'
@@ -36,6 +37,7 @@ module.exports = {
     'no-multi-spaces': 'error',
     'camelcase': 'error',
     'space-before-function-paren': ['error', 'never'],
-    'space-before-blocks': 'error'
+    'space-before-blocks': 'error',
+    'prefer-rest-params': 'off'
   }
 }

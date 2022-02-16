@@ -13,6 +13,7 @@ import type { Widget } from './widgets/Widget'
 import type { Dom } from '../utils'
 import type { Cell } from '../declare'
 
+@observer
 export class PolymerSheet {
   private readonly rootNodeId = 'polymersheet'
   private readonly viewNodeId = 'polymersheet__view'

@@ -7,6 +7,7 @@ import { TextWrap, TextAlign } from '../../declare'
 import type { Sheet } from '../../declare'
 import type { OverflowMap } from '../Store'
 import type { TextInfo } from './../../utils/text'
+import type { DrawingStyles } from '../../utils/draw'
 
 interface CellPositionInfo {
   /** rowIndex */
@@ -48,22 +49,10 @@ export default class Content extends Widget {
       .clearAll()
       .size(contentWidth, contentHeight, devicePixelRatio)
 
-    this.drawBackground()
     this.drawContent(worksheet)
     this.drawRowHeader(worksheet)
     this.drawColumnHeader(worksheet)
     this.drawUpperLeftCorner()
-  }
-
-  drawBackground() {
-    const { contentWidth, contentHeight, styles: { backgroundColor } } = this.polymersheet.store
-    this.brush.rect(
-      { x: 0, y: 0 },
-      { x: contentWidth, y: contentHeight },
-      {
-        fillStyle: backgroundColor
-      }
-    )
   }
 
   drawUpperLeftCorner() {
@@ -91,6 +80,8 @@ export default class Content extends Widget {
       styles: { header: headerStyles = {} }
     } = this.polymersheet.store
     const { scrollTop = 0 } = worksheet
+    const { borderWidth = 1 } = headerStyles.default || {}
+    const halfBorder = borderWidth / 2
 
     let startRow = findCellPosition(horizontalLinesPosition, scrollTop)
     let endRow = findCellPosition(horizontalLinesPosition, scrollTop + contentHeight)
@@ -103,33 +94,40 @@ export default class Content extends Widget {
       endRow = horizontalLinesPosition.length - 1
     }
 
-    this.brush
-      .save()
-      .translate(0, columnHeaderHeight)
-    // 绘制背景，不能在循环中和边框交叉绘制，否则在低设备像素比(如 0.67、 0.33)时会出现某些线条被吞并的情况
-      .rect(
-        { x: 0, y: 0 },
-        { x: rowHeaderWidth, y: horizontalLinesPosition[endRow] - scrollTop },
-        {
-          fillStyle: headerStyles.default?.backgroundColor
-        }
-      )
+    this.brush.save().translate(0, columnHeaderHeight)
 
     for (let i = startRow; i <= endRow; i++) {
       if (worksheet.rowsHidden?.includes(i)) {
         continue
       }
 
-      const preCurrentRowEndAxisY = i === 0 ? -scrollTop : horizontalLinesPosition[i - 1] - scrollTop
-      const currentRowEndAxisY = horizontalLinesPosition[i] - scrollTop
+      const preCurrentRowEndAxisY = i === 0 ? -offsetTop : horizontalLinesPosition[i - 1] - offsetTop
+      const currentRowEndAxisY = horizontalLinesPosition[i] - offsetTop
 
-      this.drawHeader(
-        0,
-        preCurrentRowEndAxisY,
-        rowHeaderWidth,
-        currentRowEndAxisY,
-        `${i + 1}`,
-      )
+      this.brush
+        .cell(
+          { x: 0, y: preCurrentRowEndAxisY },
+          {	x: rowHeaderWidth - halfBorder, y: currentRowEndAxisY - halfBorder },
+          {
+            lineWidth: borderWidth,
+            strokeStyle: headerStyles?.default?.borderColor,
+            fillStyle: headerStyles?.default?.backgroundColor
+          },
+        )
+        .text(
+          `${i + 1}`,
+          {
+            x: (rowHeaderWidth - borderWidth) / 2,
+            y: (currentRowEndAxisY + preCurrentRowEndAxisY - borderWidth) / 2
+          },
+          {
+            fillStyle: headerStyles?.default?.fontColor,
+            fontSize: headerStyles?.default?.fontSize,
+            fontFamily: headerStyles?.default?.fontFamily,
+            textAlign: 'center',
+            textBaseline: 'middle'
+          }
+        )
     }
 
     this.brush.restore()
@@ -144,6 +142,8 @@ export default class Content extends Widget {
       styles: { header: headerStyles = {} }
     } = this.polymersheet.store
     const { scrollLeft = 0 } = worksheet
+    const { borderWidth = 1 } = headerStyles.default || {}
+    const halfBorder = borderWidth / 2
 
     let startCol = findCellPosition(verticalLinesPosition, scrollLeft)
     let endCol = findCellPosition(verticalLinesPosition, scrollLeft + contentWidth)
@@ -155,77 +155,52 @@ export default class Content extends Widget {
       endCol = verticalLinesPosition.length - 1
     }
 
-    this.brush
-      .save()
-      .translate(rowHeaderWidth, 0)
-    // 绘制背景，不能在循环中和边框交叉绘制，否则在低设备像素比(如 0.67、 0.33)时会出现某些线条被吞并的情况
-      .rect(
-        { x: 0, y: 0 },
-        { x: verticalLinesPosition[endCol] - scrollLeft, y: columnHeaderHeight },
-        {
-          fillStyle: headerStyles.default?.backgroundColor
-        }
-      )
+    this.brush.save().translate(rowHeaderWidth, 0)
 
     for (let i = startCol; i <= endCol; i++) {
       if (worksheet.colsHidden && worksheet.colsHidden.includes(i)) {
         continue
       }
 
-      const preCurrentColEndAxisX = i === 0 ? -scrollLeft : verticalLinesPosition[i - 1] - scrollLeft
+      const preCurrentColEndAxisX = i === 0 ? -offsetLeft : verticalLinesPosition[i - 1] - offsetLeft
       const currentColEndAxisX = verticalLinesPosition[i] - scrollLeft
       const columnNum = transNumToColumnIdx(i)
-      this.drawHeader(
-        preCurrentColEndAxisX,
-        0,
-        currentColEndAxisX,
-        columnHeaderHeight,
-        columnNum
-      )
+
+      this.brush
+        .cell(
+          { x: preCurrentColEndAxisX, y: 0	},
+          {	x: currentColEndAxisX - halfBorder, y: columnHeaderHeight - halfBorder },
+          {
+            lineWidth: borderWidth,
+            strokeStyle: headerStyles?.default?.borderColor,
+            fillStyle: headerStyles?.default?.backgroundColor
+          },
+        )
+        .text(
+          columnNum,
+          {
+            x: (preCurrentColEndAxisX + currentColEndAxisX - borderWidth) / 2,
+            y: (columnHeaderHeight - borderWidth) / 2
+          },
+          {
+            fillStyle: headerStyles?.default?.fontColor,
+            fontSize: headerStyles?.default?.fontSize,
+            fontFamily: headerStyles?.default?.fontFamily,
+            textAlign: 'center',
+            textBaseline: 'middle'
+          }
+        )
     }
 
     this.brush.restore()
   }
 
-  private drawHeader(startAxisX: number, startAxisY: number, endAxisX: number, endAxisY: number, txt: string) {
-    const { styles: { header: headerStyles = {} } } = this.polymersheet.store
-    const { borderWidth = 1 } = headerStyles.default || {}
-    const halfBorder = borderWidth / 2
-
-    this.brush
-      .cell(
-        { x: startAxisX, y: startAxisY },
-        {	x: endAxisX - halfBorder, y: endAxisY - halfBorder },
-        {
-          lineWidth: borderWidth,
-          strokeStyle: headerStyles?.default?.borderColor,
-        },
-      )
-      .text(
-        txt,
-        {
-          x: (startAxisX + endAxisX - borderWidth) / 2,
-          y: (startAxisY + endAxisY - borderWidth) / 2
-        },
-        {
-          fillStyle: headerStyles?.default?.fontColor,
-          fontSize: headerStyles?.default?.fontSize,
-          fontFamily: headerStyles?.default?.fontFamily,
-          textAlign: 'center',
-          textBaseline: 'middle'
-        }
-      )
-  }
-
   drawContent(worksheet: Sheet) {
     const {
-      rowHeaderWidth,
-      columnHeaderHeight,
       contentWidth,
       contentHeight,
       verticalLinesPosition,
       horizontalLinesPosition,
-      styles: { cell: cellStyles }
     } = this.polymersheet.store
     const { scrollTop = 0, scrollLeft = 0 } = worksheet
 
@@ -317,7 +292,7 @@ export default class Content extends Widget {
 
     const { overflowMap } = this.polymersheet.store
 
-    // 保存溢出单元格配置
+    // 溢出单元格配置保存
     for (let row = startRow; row < endRow; row++) {
       if (worksheet.cells[row] === null) {
         continue
@@ -374,20 +349,7 @@ export default class Content extends Widget {
       }
     }
 
-    this.brush
-      .save()
-      .translate(rowHeaderWidth, columnHeaderHeight)
-    // 绘制背景，不能在循环中和边框交叉绘制，否则在低设备像素比(如 0.67、 0.33)时会出现某些线条被吞并的情况
-      .rect(
-        { x: 0, y: 0 },
-        { x: verticalLinesPosition[endCol] - scrollLeft, y: horizontalLinesPosition[endRow] - scrollTop },
-        {
-          fillStyle: cellStyles?.default?.backgroundColor
-        }
-      )
-
-
-    // 绘制单元格边框及内容
+    // 绘制
     for (let cellsUpdateIdx = 0; cellsUpdateIdx < cellsUpdate.length; cellsUpdateIdx++) {
       const { r, c, sx, sy, ex, ey } = cellsUpdate[cellsUpdateIdx]
       const cell = worksheet.cells[r][c]
@@ -401,8 +363,6 @@ export default class Content extends Widget {
         }
       }
     }
-
-    this.brush.restore()
   }
 
   inView(col: number, row: number, scrollleft: number, scrollTop: number) {
@@ -410,7 +370,13 @@ export default class Content extends Widget {
   }
 
   drawNullCell(worksheet: Sheet, row: number, col: number, startAxisX: number, startAxisY: number, endAxisX: number, endAxisY: number, overflowMap: OverflowMap, startCol: number, endCol: number) {
+    const { columnHeaderHeight, rowHeaderWidth, styles: { cell: cellStyles = {} } } = this.polymersheet.store
+    // TODO: 背景色
     const cellOverflowInfo = this.getCellOverflowInfo(row, col, endCol, overflowMap)
+    const borderStyles = {
+      lineWidth: cellStyles?.default?.borderWidth,
+      strokeStyle: cellStyles?.default?.borderColor
+    }
 
     if (cellOverflowInfo?.colLast) {
       const { mainCol, mainRow } = cellOverflowInfo
@@ -423,14 +389,18 @@ export default class Content extends Widget {
       )
     }
 
+    this.brush.save().translate(rowHeaderWidth, columnHeaderHeight)
+
     if (cellOverflowInfo?.colLast || !cellOverflowInfo) {
-      this.drawCellBorderRight(startAxisY, endAxisX, endAxisY)
+      this.drawBorderRight(startAxisY, endAxisX, endAxisY, borderStyles)
     }
 
-    this.drawCellBorderBottom(startAxisX, endAxisX, endAxisY)
+    this.drawBorderBottom(startAxisX, endAxisX, endAxisY, borderStyles)
+    this.brush.restore()
   }
 
-  private drawOverflowCell(worksheet: Sheet, mainRow: number, mainCol: number, startCol: number, endCol: number) {
+  drawOverflowCell(worksheet: Sheet, mainRow: number, mainCol: number, startCol: number, endCol: number) {
+    const { rowHeaderWidth, columnHeaderHeight } = this.polymersheet.store
     const { scrollTop = 0, scrollLeft = 0 } = worksheet
 
     let startAxisX
@@ -463,19 +433,28 @@ export default class Content extends Widget {
       letterSpacing: 2,
     })
 
+    this.brush.save().translate(rowHeaderWidth, columnHeaderHeight)
+
     if (!isNullish(textInfo)) {
       this.drawText(textInfo, startAxisX, startAxisY)
     }
+
+    this.brush.restore()
   }
 
-  private drawCell(worksheet: Sheet, row: number, col: number, startAxisX: number, startAxisY: number, endAxisX: number, endAxisY: number, overflowMap: OverflowMap, startCol: number, endCol: number) {
+  drawCell(worksheet: Sheet, row: number, col: number, startAxisX: number, startAxisY: number, endAxisX: number, endAxisY: number, overflowMap: OverflowMap, startCol: number, endCol: number) {
     const cell = worksheet.cells[row][col]
 
     if (!cell) {
       return
     }
 
+    const { rowHeaderWidth, columnHeaderHeight, styles: { cell: cellStyles = {} } } = this.polymersheet.store
     const cellOverflowInfo = this.getCellOverflowInfo(row, col, endCol, overflowMap)
+    const borderStyles = {
+      lineWidth: cellStyles?.default?.borderWidth,
+      strokeStyle: cellStyles?.default?.borderColor
+    }
     let needToDrawRightBorder = true
 
     if (cellOverflowInfo) {
@@ -502,50 +481,42 @@ export default class Content extends Widget {
       letterSpacing: 2,
     })
 
+    this.brush.save().translate(rowHeaderWidth, columnHeaderHeight)
+
     if (needToDrawRightBorder) {
-      this.drawCellBorderRight(startAxisY, endAxisX, endAxisY)
+      this.drawBorderRight(startAxisY, endAxisX, endAxisY, borderStyles)
     }
 
-    this.drawCellBorderBottom(startAxisX, endAxisX, endAxisY)
+    this.drawBorderBottom(startAxisX, endAxisX, endAxisY, borderStyles)
 
     if (!cellOverflowInfo) {
       this.drawText(textInfo, startAxisX, startAxisY)
     }
+
+    this.brush.restore()
   }
 
-  private getCellBorderStyles() {
-    const { styles: { cell: cellStyles }} = this.polymersheet.store
-    const borderStyles = {
-      lineWidth: cellStyles?.default?.borderWidth,
-      strokeStyle: cellStyles?.default?.borderColor
-    }
-
-    return borderStyles
-  }
-
-  private drawCellBorderRight(startAxisY: number, endAxisX: number, endAxisY: number) {
-    const borderStyles = this.getCellBorderStyles()
+  drawBorderRight(startAxisY: number, endAxisX: number, endAxisY: number, borderStyles: DrawingStyles) {
     const halfBorder = (borderStyles?.lineWidth || 1) / 2
     this.brush
       .line(
-        { x: endAxisX - halfBorder, y: startAxisY - halfBorder },
+        { x: endAxisX - halfBorder, y: startAxisY },
         { x: endAxisX - halfBorder, y: endAxisY },
         borderStyles
       )
   }
 
-  private drawCellBorderBottom(startAxisX: number, endAxisX: number, endAxisY: number) {
-    const borderStyles = this.getCellBorderStyles()
+  drawBorderBottom(startAxisX: number, endAxisX: number, endAxisY: number, borderStyles: DrawingStyles) {
     const halfBorder = (borderStyles?.lineWidth || 1) / 2
     this.brush
       .line(
-        { x: startAxisX - halfBorder, y: endAxisY - halfBorder },
-        { x: endAxisX - halfBorder, y: endAxisY - halfBorder },
+        { x: startAxisX, y: endAxisY - halfBorder },
+        { x: endAxisX, y: endAxisY - halfBorder },
         borderStyles
       )
   }
 
-  private drawText(textInfo: TextInfo, startAxisX: number, startAxisY: number) {
+  drawText(textInfo: TextInfo, startAxisX: number, startAxisY: number) {
     const { lines } = textInfo
 
     for (let i = 0; i < lines.length; i++) {
@@ -561,7 +532,7 @@ export default class Content extends Widget {
   }
 
   // @ts-ignore
-  private trace(curRow: number, curCol: number, nextCol: number, textAlign: TextAlign, textWidth: number, worksheet: Sheet) {
+  trace(curRow: number, curCol: number, nextCol: number, textAlign: TextAlign, textWidth: number, worksheet: Sheet) {
     if (curCol > nextCol && nextCol < 0) {
       return nextCol
     }
@@ -616,7 +587,7 @@ export default class Content extends Widget {
     }
   }
 
-  private getCellOverflowInfo(row: number, col: number, endCol: number, overflowMap: OverflowMap) {
+  getCellOverflowInfo(row: number, col: number, endCol: number, overflowMap: OverflowMap) {
     let colIn = false
     let colLast = false
     const sameRowOverflowMap = overflowMap.get(row)
