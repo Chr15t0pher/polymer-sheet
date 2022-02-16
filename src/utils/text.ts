@@ -88,7 +88,6 @@ export function getCellTextInfo(ctx: CanvasRenderingContext2D, cell: Cell, optio
         textWidth: lineWidth,
       })
     }
-    console.info(allLinesHeight)
   } else {
     // 溢出和截断
     const textMetrics = ctx.measureText(value)
