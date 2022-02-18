@@ -1,4 +1,4 @@
-export { default as d } from './dom'
+export * from './dom'
 export * from './helpers'
 export * from './column'
 export * from './text'

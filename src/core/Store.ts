@@ -2,9 +2,17 @@ import type { PolymerSheetOptions } from '../declare'
 
 export interface Store extends PolymerSheetOptions {
 
-  /** 画布css宽高 */
+  /** 根节点宽高 */
+  rootNodeWidth: number
+  rootNodeHeight: number
+
+  /** 画布宽高 */
   contentWidth: number
   contentHeight: number
+
+  /** 表格单元格部分的宽高 */
+  cellsContentWidth: number
+  cellsContentHeight: number
 
   devicePixelRatio: number
 
@@ -47,8 +55,14 @@ const store: Store = {
 
   bottomBarHeight: 42,
 
+  rootNodeWidth: 0,
+  rootNodeHeight: 0,
+
   contentWidth: 0,
   contentHeight: 0,
+
+  cellsContentWidth: 0,
+  cellsContentHeight: 0,
 
   devicePixelRatio: 1,
 

@@ -1,31 +1,25 @@
+import './index.styl'
+
 import store from './Store'
-import Content from './Content'
-import ToolBar from './ToolBar'
-import BottomBar from './BottomBar'
-import ScrollBar from './ScrollBar'
+
+import Widgets from './widgets'
+
 import { mergeOptions, d, isNullish } from '../utils'
 import { PolymerSheetOptions, Sheet, SheetId } from '../declare'
-import './index.styl'
+
+import type { Widget } from './widgets/Widget'
+import type { Dom } from '../utils'
 
 export class PolymerSheet {
   store = store
 
-  toolbar!: ToolBar
+  widgets: Widget[] = []
 
-  content!: Content
-
-  bottomBar!: BottomBar
-
-  scrollBar!: ScrollBar
+  rootNode!: Dom
 
   constructor(options: Partial<PolymerSheetOptions>) {
     this.store = mergeOptions(this.store, options)
-    this.toolbar = new ToolBar(this)
-    this.content = new Content(this)
-    this.bottomBar = new BottomBar(this)
-    this.scrollBar = new ScrollBar(this)
-
-
+    this.widgets = Widgets.map(C => new C(this))
     const { sheets, worksheetId } = this.store
 
     if (sheets.length > 0) {
@@ -34,23 +28,23 @@ export class PolymerSheet {
         : sheets[0].id
       this.setWorksheet(defaultWorksheetId)
     }
-
   }
 
   mount() {
-    this.toolbar.mount()
-    this.bottomBar.mount()
     this.renderSkeleton()
-    this.content.mount()
-    this.scrollBar.mount()
-    this.content.draw()
+    this.calcRootNodeSize()
+    this.widgets.forEach(w => w.mount())
+  }
+
+  update() {
+    this.widgets.forEach(w => w.update())
   }
 
   setWorksheet(sheetId: SheetId) {
     this.store.worksheetId = sheetId
     const worksheet = this.getWorksheet()
     if (worksheet) {
-      this.setWorksheetActualSize(worksheet)
+      this.calcWorksheetActualSize(worksheet)
     }
   }
 
@@ -58,72 +52,27 @@ export class PolymerSheet {
     return this.store.sheets.filter(sheet => sheet.id === this.store.worksheetId)[0]
   }
 
-  renderSkeleton() {
-    const {
-      containerId,
-      devicePixelRatio,
-      rowHeaderWidth,
-      toolbarHeight,
-      columnHeaderHeight,
-      bottomBarHeight,
-      scrollbarSize
-    } = this.store
-
-    const container = d(containerId)
-    const containerHeight = container.height()
-    const containerWidth = container.width()
-
-    const cellsOverlayWidth = containerWidth - rowHeaderWidth
-    const cellsOverlayHeight = containerHeight - (toolbarHeight + columnHeaderHeight + bottomBarHeight)
-
-    const cellsContentWidth = cellsOverlayWidth - scrollbarSize
-    const cellsContentHeight = cellsOverlayHeight - scrollbarSize
-
-    this.store.contentWidth = containerWidth - scrollbarSize
-    this.store.contentHeight = containerHeight - (scrollbarSize + toolbarHeight + bottomBarHeight)
-
-    container.append(`
-      <div id="polymersheet" style="width: ${containerWidth}px; height: ${containerHeight}px">
-        <div id="polymersheet__toolbar" style="height: ${toolbarHeight}px">
-        </div>
-        <div id="polymersheet__view">
-          <canvas id="polymersheet__content" width="${this.store.contentWidth * devicePixelRatio}" height="${this.store.contentHeight * devicePixelRatio}" style="width: ${this.store.contentWidth}px; height: ${this.store.contentHeight}px"></canvas>
-          <table>
-            <tr>
-              <td class="polymersheet__view_grid">
-                <div class="polymersheet__upper_left_corner" style="width: ${rowHeaderWidth}px; height: ${columnHeaderHeight}px;"></div>
-              </td>
-              <td class="polymersheet__view_grid">
-                <div class="polymersheet__header--col" style="width: ${cellsContentWidth}px; height: ${columnHeaderHeight}px; "></div>
-								<div class="polymersheet__header_shim--col" style="width: ${scrollbarSize}px; height: ${columnHeaderHeight}px"></div>
-              </td>
-            </tr>
-            <tr>
-              <td class="polymersheet__view_grid">
-                <div class="polymersheet__header--row" style="width: ${rowHeaderWidth}px; height: ${cellsContentHeight}px"></div>
-								<div class="polymersheet__header_shim--row" style="width: ${rowHeaderWidth}px; height: ${scrollbarSize}px"></div>
-              </td>
-              <td class="polymersheet__view_grid">
-                <div class="polymersheet__scrollbar polymersheet__scrollbar--vertical" style="width: ${scrollbarSize}px; height: ${cellsContentHeight}px;">
-                  <div style="height: ${this.store.worksheetActualHeight}px"></div>
-                </div>
-                <div class="polymersheet__scrollbar polymersheet__scrollbar--horizontal" style="width: ${cellsOverlayWidth}px; height: ${scrollbarSize}px;">
-                  <div style="width: ${this.store.worksheetActualWidth}px;"></div>
-                </div>
-                <div class="polymersheet__cells_overlay" style="width: ${cellsOverlayWidth}px; height: ${cellsOverlayHeight}px"></div>
-              </td>
-            </tr>
-          </table>
-        </div>
-        <div id="polymersheet__bottombar">
-          bottombar
-        </div>
-      </div>
-    `)
-
+  private renderSkeleton() {
+    this.rootNode = d(this.store.containerId)
+    this.rootNode.append(`
+			<div id="polymersheet">
+				<div id="polymersheet__view">
+					<table>
+						<tr>
+							<td class="polymersheet__view_grid"></td>
+							<td class="polymersheet__view_grid"></td>
+						</tr>
+						<tr>
+							<td class="polymersheet__view_grid"></td>
+							<td class="polymersheet__view_grid"></td>
+						</tr>
+					</table>
+				</div>
+			</div>
+		`)
   }
 
-  private setWorksheetActualSize(sheet: Sheet) {
+  private calcWorksheetActualSize(sheet: Sheet) {
     const rowLen = sheet.cells.length
     const columnLen = sheet.cells[0].length
     for (let i = 0; i < rowLen; i++) {
@@ -157,5 +106,22 @@ export class PolymerSheet {
       this.store.worksheetActualWidth += Math.round(columnWidth)
       this.store.verticalLinesPosition.push(this.store.worksheetActualWidth)
     }
+  }
+
+  private calcRootNodeSize() {
+    const {
+      rowHeaderWidth,
+      toolbarHeight,
+      columnHeaderHeight,
+      bottomBarHeight,
+      scrollbarSize
+    } = this.store
+
+    this.store.rootNodeWidth = this.rootNode.width()
+    this.store.rootNodeHeight = this.rootNode.height()
+    this.store.contentWidth = this.store.rootNodeWidth - scrollbarSize
+    this.store.contentHeight = this.store.rootNodeHeight - scrollbarSize - toolbarHeight - bottomBarHeight
+    this.store.cellsContentWidth = this.store.contentWidth - rowHeaderWidth
+    this.store.cellsContentHeight = this.store.contentHeight - columnHeaderHeight
   }
 }

@@ -1,9 +1,9 @@
-class Dom {
-  private el!: HTMLElement
+export class Dom<T extends HTMLElement = HTMLElement> {
+  private el!: T
 
-  constructor(el: string | HTMLElement) {
+  constructor(el: string | T) {
     if (typeof el === 'string') {
-      const target = document.querySelector(el) as HTMLElement
+      const target = document.querySelector(el) as T
       if (target) {
         this.el = target
       } else {
@@ -50,11 +50,38 @@ class Dom {
     }
   }
 
-  append(fragment: string | HTMLElement) {
-    if (typeof fragment === 'string') {
-      this.el.innerHTML = fragment
+  private addHTML(html: string, cb: (fragment: DocumentFragment) => void) {
+    const divTemp = document.createElement('div')
+    let nodes = null
+    // use fragment cache to avoid multiple rerender
+    let fragment = document.createDocumentFragment()
+    divTemp.innerHTML = html
+    nodes = divTemp.childNodes
+    nodes.forEach(item => {
+      fragment.appendChild(item.cloneNode(true))
+    })
+
+    cb(fragment)
+
+    // clear dom reference to avoid memory leak
+    nodes = null
+    // @ts-ignore
+    fragment = null
+  }
+
+  append(html: string | HTMLElement) {
+    if (typeof html === 'string') {
+      this.addHTML(html, this.el.appendChild.bind(this.el))
     } else {
-      this.el.append(fragment)
+      this.el.appendChild(html)
+    }
+  }
+
+  prepend(html: string | HTMLElement) {
+    if (typeof html === 'string') {
+      this.addHTML(html, this.el.prepend.bind(this.el))
+    } else {
+      this.el.prepend(html)
     }
   }
 
@@ -66,11 +93,19 @@ class Dom {
     return this.el
   }
 
+  find(selector: string) {
+    const el = this.el.querySelector(selector) as HTMLElement
+    return new Dom(el)
+  }
+
+  findAll(selector: string) {
+    const els = this.el.querySelectorAll(selector)
+    return Array.from(els).map(el => new Dom(el as HTMLElement))
+  }
+
   private getStyleValue<T extends keyof CSSStyleDeclaration>(attr: T) {
     return getComputedStyle(this.el)[attr]
   }
 }
 
-const d = (el: string | HTMLElement) => new Dom(el)
-
-export default d
+export const d = (el: string | HTMLElement) => new Dom(el)

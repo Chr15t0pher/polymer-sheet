@@ -1,33 +1,53 @@
-import type { PolymerSheet } from './PolymerSheet'
-import { Sheet, DataType, TextWrap, TextAlign } from '../declare'
-import { d, findCellPosition, transNumToColumnIdx, isNullish, getCellTextInfo } from '../utils'
+import { Widget } from './Widget'
 
-export default class Content {
-  containerId = '#polymersheet__view'
+import { findCellPosition, transNumToColumnIdx, isNullish, getCellTextInfo } from '../../utils'
+import { TextWrap, TextAlign } from '../../declare'
 
-  ctx!: CanvasRenderingContext2D
+import type { Sheet } from '../../declare'
+import type { Dom } from '../../utils/dom'
 
-  constructor(private polymersheet: PolymerSheet) {}
+export default class Content extends Widget {
+  private readonly parentNodeSelector = '#polymersheet__view'
+  private readonly nodeId = 'polymersheet__content'
+
+  private node!: Dom<HTMLCanvasElement>
+  private ctx!: CanvasRenderingContext2D
 
   mount() {
-    const ctx = (d(`${this.containerId} #polymersheet__content`).elem() as HTMLCanvasElement).getContext('2d')
-    if (!ctx) {
-      throw new Error('fail to get canvas 2D context')
-    } else {
-      this.ctx = ctx
-    }
+    const { contentWidth, contentHeight } = this.polymersheet.store
+    const parentNode = this.polymersheet.rootNode.find(this.parentNodeSelector)
+
+    parentNode?.prepend(`
+			<canvas id="${this.nodeId}" style="width: ${contentWidth}px; height: ${contentHeight}px"></canvas>
+		`)
+
+    this.node = parentNode.find(`#${this.nodeId}`) as Dom<HTMLCanvasElement>
+    this.ctx = this.node.elem().getContext('2d')!
+
+    this.update()
   }
 
-  draw() {
+  update() {
     const { contentHeight, contentWidth } = this.polymersheet.store
     this.ctx.clearRect(0, 0, contentWidth, contentHeight)
     const worksheet = this.polymersheet.getWorksheet()
     const { scrollLeft, scrollTop } = worksheet
 
+    this.setCanvasSize()
+
     this.drawUpperLeftCorner()
     this.drawContent(worksheet, scrollTop, scrollLeft)
     this.drawRowHeader(worksheet, scrollTop)
     this.drawColumnHeader(worksheet, scrollLeft)
+  }
+
+  setCanvasSize() {
+    const { contentWidth, contentHeight, devicePixelRatio } = this.polymersheet.store
+    const el = this.node.elem()
+
+    el.width = contentWidth * devicePixelRatio
+    el.height = contentHeight * devicePixelRatio
+    this.ctx.scale(devicePixelRatio, devicePixelRatio)
   }
 
   drawUpperLeftCorner() {
@@ -159,7 +179,6 @@ export default class Content {
       contentHeight,
       verticalLinesPosition,
       horizontalLinesPosition,
-      defaultColWidth
     } = this.polymersheet.store
 
     let startRow = findCellPosition(horizontalLinesPosition, scrollTop)
