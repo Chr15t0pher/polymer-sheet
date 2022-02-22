@@ -105,6 +105,26 @@ export interface Sheet {
 
   scrollLeft?: number
 }
+export interface StyleSet {
+  borderWidth?: number,
+  borderColor?: string,
+  backgroundColor?: string,
+  fontSize?: number,
+  fontColor?: string,
+  fontFamily?: string,
+}
+
+/**
+ * 不同状态下的样式
+ * `default`: 默认样式
+ * `highlight`: 选中多个单元格或选中单元格时所在表头高亮的样式
+ * `focus`: 选中表头或选中单个单元格的样式
+ */
+export interface StylesOfDifferentStatus {
+  default?: StyleSet,
+  highlight?: StyleSet,
+  focus?: StyleSet
+}
 
 export interface PolymerSheetOptions {
   containerId: string
@@ -123,4 +143,10 @@ export interface PolymerSheetOptions {
   defaultColWidth: number
 
   bottomBarHeight: number
+
+  styles: {
+    upperLeftCorner?: StyleSet,
+    header?: StylesOfDifferentStatus,
+    cell?: StylesOfDifferentStatus,
+  }
 }

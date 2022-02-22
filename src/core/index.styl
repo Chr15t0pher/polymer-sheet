@@ -1,6 +1,8 @@
-border-color = #dadce0
+toolbar-border-color = #c0c0c0
+scrollbar-border-color = #dcdcdc
 scrollbar-size = 10px
-shim-background-color = lighten(border-color, 70%)
+shim-background-color = #F8F8F8
+scrollbar-thumb-color = #dadce0
 
 html, body, div, span, applet, object, iframe,
 h1, h2, h3, h4, h5, h6, p, blockquote, pre,
@@ -56,17 +58,11 @@ table
 #polymersheet__view
 	position: relative
 
-.polymersheet__upper_left_corner
-	background: white
-	border: 1px solid border-color
-	border-top-width: 0
-	border-left-width: 0
-
 #polymersheet__content
 	position: absolute
 
 #polymersheet__toolbar
-	border-bottom: 1px solid border-color
+	border-bottom: 1px solid toolbar-border-color
 
 .polymersheet__view_grid
 	position: relative
@@ -79,22 +75,22 @@ table
 .polymersheet__header_shim--col,
 .polymersheet__header_shim--row
 	background: shim-background-color
-	border: 1px solid border-color
+	border: 1px solid scrollbar-border-color
 
 .polymersheet__header_shim--col
 	border-top-width: 0
 
 .polymersheet__scrollbar
 	position: absolute
-	border: 1px solid border-color
+	border: 1px solid scrollbar-border-color
 	background: white
 
 	&::-webkit-scrollbar-thumb
 		border-radius: (scrollbar-size / 2)px
 		border: 1px solid white
-		background: darken(border-color, 10%)
+		background: scrollbar-thumb-color
 		&:hover
-			background: darken(border-color, 20%)
+			background: darken(scrollbar-thumb-color, 10%)
 
 	&::-webkit-scrollbar-button
 		display: none
@@ -127,7 +123,10 @@ table
 
 		&::-webkit-scrollbar-corner
 			background: shim-background-color
-			border-left: 1px solid border-color
+			border-left: 1px solid scrollbar-border-color
+
+.polymersheet__cells_overlay
+	position: absolute
 
 
 

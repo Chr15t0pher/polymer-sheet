@@ -1,5 +1,7 @@
 import type { PolymerSheetOptions } from '../declare'
 
+export type OverflowMap = Map<number, Map<number, { row: number, intervalLeftCol: number, intervalRightCol: number }>>
+
 export interface Store extends PolymerSheetOptions {
 
   /** 根节点宽高 */
@@ -28,7 +30,7 @@ export interface Store extends PolymerSheetOptions {
   verticalLinesPosition: number[]
 
   /** 文本换行溢出位置记录 */
-  overflowMap: Map<number, Map<number, { row: number, intervalLeftCol: number, intervalRightCol: number }>>
+  overflowMap: OverflowMap,
 
   /** 滚动条宽度 */
   scrollbarSize: number,
@@ -46,12 +48,12 @@ const store: Store = {
 
   toolbarHeight: 42,
 
-  rowHeaderWidth: 40,
-  columnHeaderHeight: 20,
+  rowHeaderWidth: 46,
+  columnHeaderHeight: 24,
 
-  // defaultRowHeight: 20,
-  defaultRowHeight: 200,
-  defaultColWidth: 74,
+  defaultRowHeight: 20,
+  // defaultRowHeight: 200,
+  defaultColWidth: 100,
 
   bottomBarHeight: 42,
 
@@ -77,6 +79,51 @@ const store: Store = {
   overflowMap: new Map(),
 
   scrollbarSize: 12,
+
+  styles: {
+    upperLeftCorner: {
+      borderWidth: 1,
+      borderColor: '#c0c0c0',
+      backgroundColor: '#ffffff'
+    },
+    cell: {
+      default: {
+        borderWidth: 1,
+        borderColor: '#dcdcdc',
+        backgroundColor: '#ffffff',
+      },
+      highlight: {
+        borderWidth: 1,
+        borderColor: 'blue',
+        backgroundColor: 'lightblue',
+      },
+      focus: {
+        borderWidth: 2,
+        borderColor: 'blue',
+        backgroundColor: 'lightblue',
+      }
+    },
+    header: {
+      default: {
+        borderWidth: 1,
+        borderColor: '#c0c0c0',
+        backgroundColor: '#f8f9fa',
+        fontSize: 11,
+        fontColor: '#555555',
+        fontFamily: 'Roboto,RobotoDraft,Helvetica,Arial,sans-serif'
+      },
+      highlight: {
+        borderWidth: 1,
+        borderColor: 'blue',
+        backgroundColor: 'lightblue',
+      },
+      focus: {
+        borderWidth: 1,
+        backgroundColor: 'gray',
+        fontColor: 'white'
+      }
+    }
+  }
 }
 
 export default store

@@ -1,5 +1,17 @@
 import { Cell, TextAlign, TextBaseline, TextWrap } from '../declare'
-import { isEnglish, isChinese } from './validators'
+import { isEnglish, isChinese } from './helpers'
+
+export interface TextLine {
+  text: string,
+  top: number,
+  left: number,
+  width: number,
+  height: number,
+}
+
+export interface TextInfo {
+  lines: TextLine[]
+}
 
 // TODO: 把水平和垂直的字符间距摘出来成配置项
 const horizontalSpace = 2
@@ -12,10 +24,10 @@ export function getCellTextInfo(ctx: CanvasRenderingContext2D, cell: Cell, optio
   const value = cell.v === void 0 || cell.v === null ? null : cell.w === void 0 || cell.w === null ? cell.v.toString() : cell.w
   const textWrap = cell.s === void 0 || cell.s === null || cell.s.tw === void 0 || cell.s.tw === null ? TextWrap.break : cell.s.tw
   const { textAreaHeight, textAreaWidth, leading, letterSpacing } = options
-  const textInfo: any = { lines: [] }
+  const textInfo: TextInfo = { lines: [] }
 
   if (value === null) {
-    return
+    return textInfo
   }
 
   // // TODO: 考虑竖排文字
@@ -84,8 +96,8 @@ export function getCellTextInfo(ctx: CanvasRenderingContext2D, cell: Cell, optio
         text: lines[i],
         top,
         left,
-        textHeight: lineHeight,
-        textWidth: lineWidth,
+        height: lineHeight,
+        width: lineWidth,
       })
     }
   } else {
@@ -113,8 +125,8 @@ export function getCellTextInfo(ctx: CanvasRenderingContext2D, cell: Cell, optio
       text: value,
       top,
       left,
-      textHeight,
-      textWidth,
+      height: textHeight,
+      width: textWidth,
     })
 
     return textInfo

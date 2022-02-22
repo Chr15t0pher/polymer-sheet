@@ -1,17 +1,27 @@
 import { Widget } from './Widget'
 
 import { findCellPosition, transNumToColumnIdx, isNullish, getCellTextInfo } from '../../utils'
+import { Brush } from '../../utils'
 import { TextWrap, TextAlign } from '../../declare'
 
 import type { Sheet } from '../../declare'
-import type { Dom } from '../../utils/dom'
+import type { OverflowMap } from '../Store'
+import type { TextInfo } from './../../utils/text'
+
+interface CellPositionInfo {
+  r: number,
+  c: number,
+  sx: number,
+  sy: number,
+  ex: number,
+  ey: number,
+}
 
 export default class Content extends Widget {
   private readonly parentNodeSelector = '#polymersheet__view'
   private readonly nodeId = 'polymersheet__content'
 
-  private node!: Dom<HTMLCanvasElement>
-  private ctx!: CanvasRenderingContext2D
+  private brush!: Brush
 
   mount() {
     const { contentWidth, contentHeight } = this.polymersheet.store
@@ -21,51 +31,48 @@ export default class Content extends Widget {
 			<canvas id="${this.nodeId}" style="width: ${contentWidth}px; height: ${contentHeight}px"></canvas>
 		`)
 
-    this.node = parentNode.find(`#${this.nodeId}`) as Dom<HTMLCanvasElement>
-    this.ctx = this.node.elem().getContext('2d')!
+    this.brush = new Brush(`#${this.nodeId}`)
 
     this.update()
   }
 
   update() {
-    const { contentHeight, contentWidth } = this.polymersheet.store
-    this.ctx.clearRect(0, 0, contentWidth, contentHeight)
-    const worksheet = this.polymersheet.getWorksheet()
-    const { scrollLeft, scrollTop } = worksheet
-
-    this.setCanvasSize()
-
-    this.drawUpperLeftCorner()
-    this.drawContent(worksheet, scrollTop, scrollLeft)
-    this.drawRowHeader(worksheet, scrollTop)
-    this.drawColumnHeader(worksheet, scrollLeft)
-  }
-
-  setCanvasSize() {
     const { contentWidth, contentHeight, devicePixelRatio } = this.polymersheet.store
-    const el = this.node.elem()
+    const worksheet = this.polymersheet.getWorksheet()
 
-    el.width = contentWidth * devicePixelRatio
-    el.height = contentHeight * devicePixelRatio
-    this.ctx.scale(devicePixelRatio, devicePixelRatio)
+    this.brush
+      .clearAll()
+      .size(contentWidth, contentHeight, devicePixelRatio)
+
+    this.drawContent(worksheet)
+    this.drawRowHeader(worksheet)
+    this.drawColumnHeader(worksheet)
+    this.drawUpperLeftCorner()
   }
 
   drawUpperLeftCorner() {
-    const { columnHeaderHeight, rowHeaderWidth } = this.polymersheet.store
-    this.ctx.save()
-    this.ctx.strokeStyle = '#dfdfdf'
-    this.ctx.lineWidth = 1
+    const { columnHeaderHeight, rowHeaderWidth, styles: { upperLeftCorner: styles } } = this.polymersheet.store
 
-    this.ctx.beginPath()
-    this.ctx.moveTo(0, columnHeaderHeight - 0.5)
-    this.ctx.lineTo(rowHeaderWidth - 0.5, columnHeaderHeight - 0.5)
-    this.ctx.lineTo(rowHeaderWidth - 0.5, 0)
-    this.ctx.stroke()
-    this.ctx.restore()
+    this.brush.cell(
+      { x: 0, y: 0	},
+      {	x: rowHeaderWidth, y: columnHeaderHeight	},
+      {
+        lineWidth: styles?.borderWidth,
+        strokeStyle: styles?.borderColor,
+        fillStyle: styles?.backgroundColor
+      }
+    )
   }
 
-  drawRowHeader(worksheet: Sheet, scrollTop = 0) {
-    const { columnHeaderHeight, contentHeight, horizontalLinesPosition, rowHeaderWidth } = this.polymersheet.store
+  drawRowHeader(worksheet: Sheet) {
+    const {
+      columnHeaderHeight,
+      contentHeight,
+      horizontalLinesPosition,
+      rowHeaderWidth,
+      styles: { header: headerStyles }
+    } = this.polymersheet.store
+    const { scrollTop = 0 } = worksheet
 
     let startRow = findCellPosition(horizontalLinesPosition, scrollTop)
     let endRow = findCellPosition(horizontalLinesPosition, scrollTop + contentHeight)
@@ -78,11 +85,7 @@ export default class Content extends Widget {
       endRow = horizontalLinesPosition.length - 1
     }
 
-    this.ctx.save()
-    this.ctx.clearRect(0, 0, rowHeaderWidth, contentHeight)
-    this.ctx.translate(0, columnHeaderHeight)
-    this.ctx.strokeStyle = '#dfdfdf'
-    this.ctx.lineWidth = 1
+    this.brush.save().translate(0, columnHeaderHeight)
 
     for (let i = startRow; i <= endRow; i++) {
       if (worksheet.rowsHidden && worksheet.rowsHidden.includes(i)) {
@@ -92,34 +95,43 @@ export default class Content extends Widget {
       const preCurrentRowEndAxisY = i === 0 ? -scrollTop : horizontalLinesPosition[i - 1] - scrollTop
       const currentRowEndAxisY = horizontalLinesPosition[i] - scrollTop
 
-      // vertical lines
-      this.ctx.beginPath()
-      this.ctx.moveTo(rowHeaderWidth - 0.5, preCurrentRowEndAxisY - 1)
-      this.ctx.lineTo(rowHeaderWidth - 0.5, currentRowEndAxisY - 1)
-      this.ctx.closePath()
-      this.ctx.stroke()
-
-      // horizontal lines
-      this.ctx.beginPath()
-      this.ctx.moveTo(0, currentRowEndAxisY)
-      this.ctx.lineTo(rowHeaderWidth, currentRowEndAxisY - 0.5)
-      this.ctx.closePath()
-      this.ctx.stroke()
-
-      // content
-      this.ctx.textAlign = 'center'
-      this.ctx.textBaseline = 'middle'
-      const textHorizontalPos = Math.round(rowHeaderWidth / 2)
-      const textVerticalPos = Math.round((currentRowEndAxisY + preCurrentRowEndAxisY) / 2)
-
-      this.ctx.fillText(`${i + 1}`, textHorizontalPos, textVerticalPos)
+      this.brush
+        .cell(
+          { x: 0, y: preCurrentRowEndAxisY },
+          {	x: rowHeaderWidth, y: currentRowEndAxisY },
+          {
+            lineWidth: headerStyles?.default?.borderWidth,
+            strokeStyle: headerStyles?.default?.borderColor,
+            fillStyle: headerStyles?.default?.backgroundColor
+          },
+        )
+        .text(
+          `${i + 1}`,
+          {
+            x: Math.round(rowHeaderWidth / 2),
+            y: Math.round((currentRowEndAxisY + preCurrentRowEndAxisY) / 2)
+          },
+          {
+            fillStyle: headerStyles?.default?.fontColor,
+            font: `${headerStyles?.default?.fontSize}px ${headerStyles?.default?.fontFamily}`,
+            textAlign: 'center',
+            textBaseline: 'middle'
+          }
+        )
     }
-    this.ctx.restore()
+
+    this.brush.restore()
   }
 
-  drawColumnHeader(worksheet: Sheet, scrollLeft = 0) {
-    const { rowHeaderWidth, contentWidth, verticalLinesPosition, columnHeaderHeight } = this.polymersheet.store
-    const offsetLeft = rowHeaderWidth + scrollLeft
+  drawColumnHeader(worksheet: Sheet) {
+    const {
+      rowHeaderWidth,
+      contentWidth,
+      verticalLinesPosition,
+      columnHeaderHeight,
+      styles: { header: headerStyles }
+    } = this.polymersheet.store
+    const { scrollLeft = 0 } = worksheet
 
     let startCol = findCellPosition(verticalLinesPosition, scrollLeft)
     let endCol = findCellPosition(verticalLinesPosition, scrollLeft + contentWidth)
@@ -131,11 +143,7 @@ export default class Content extends Widget {
       endCol = verticalLinesPosition.length - 1
     }
 
-    this.ctx.clearRect(0, 0, contentWidth - offsetLeft, columnHeaderHeight)
-    this.ctx.save()
-    this.ctx.strokeStyle = '#dfdfdf'
-    this.ctx.lineWidth = 1
-    this.ctx.translate(rowHeaderWidth, 0)
+    this.brush.save().translate(rowHeaderWidth, 0)
 
     for (let i = startCol; i <= endCol; i++) {
       if (worksheet.colsHidden && worksheet.colsHidden.includes(i)) {
@@ -144,50 +152,49 @@ export default class Content extends Widget {
 
       const preCurrentColEndAxisX = i === 0 ? -scrollLeft : verticalLinesPosition[i - 1] - scrollLeft
       const currentColEndAxisX = verticalLinesPosition[i] - scrollLeft
-
-      // vertical lines
-      this.ctx.beginPath()
-      this.ctx.moveTo(currentColEndAxisX - 0.5, 0)
-      this.ctx.lineTo(currentColEndAxisX - 0.5, columnHeaderHeight - 1)
-      this.ctx.closePath()
-      this.ctx.stroke()
-
-      // horizontal lines
-      this.ctx.beginPath()
-      this.ctx.moveTo(preCurrentColEndAxisX, columnHeaderHeight - 0.5)
-      this.ctx.lineTo(currentColEndAxisX, columnHeaderHeight - 0.5)
-      this.ctx.closePath()
-      this.ctx.stroke()
-
-      // content
       const columnNum = transNumToColumnIdx(i)
-      const textHorizontalPos = Math.round((preCurrentColEndAxisX + currentColEndAxisX) / 2)
-      const textVerticalPos = Math.round(columnHeaderHeight / 2)
 
-      this.ctx.textAlign = 'center'
-      this.ctx.textBaseline = 'middle'
-      this.ctx.fillText(columnNum, textHorizontalPos, textVerticalPos)
+      this.brush
+        .cell(
+          { x: preCurrentColEndAxisX, y: 0	},
+          {	x: currentColEndAxisX, y: columnHeaderHeight },
+          {
+            lineWidth: headerStyles?.default?.borderWidth,
+            strokeStyle: headerStyles?.default?.borderColor,
+            fillStyle: headerStyles?.default?.backgroundColor
+          },
+        )
+        .text(
+          columnNum,
+          {
+            x: Math.round((preCurrentColEndAxisX + currentColEndAxisX) / 2),
+            y: Math.round(columnHeaderHeight / 2)
+          },
+          {
+            fillStyle: headerStyles?.default?.fontColor,
+            font: `${headerStyles?.default?.fontSize}px ${headerStyles?.default?.fontFamily}`,
+            textAlign: 'center',
+            textBaseline: 'middle'
+          }
+        )
     }
-    this.ctx.restore()
+
+    this.brush.restore()
   }
 
-  drawContent(worksheet: Sheet, scrollTop = 0, scrollLeft = 0) {
+  drawContent(worksheet: Sheet) {
     const {
-      columnHeaderHeight,
-      rowHeaderWidth,
       contentWidth,
       contentHeight,
       verticalLinesPosition,
       horizontalLinesPosition,
     } = this.polymersheet.store
+    const { scrollTop = 0, scrollLeft = 0 } = worksheet
 
     let startRow = findCellPosition(horizontalLinesPosition, scrollTop)
     let endRow = findCellPosition(horizontalLinesPosition, scrollTop + contentHeight)
     let startCol = findCellPosition(verticalLinesPosition, scrollLeft)
     let endCol = findCellPosition(verticalLinesPosition, scrollLeft + contentWidth)
-
-    const offsetTop = columnHeaderHeight + scrollTop
-    const offsetLeft = rowHeaderWidth + scrollLeft
 
     if (startRow === -1) {
       startRow = 0
@@ -205,10 +212,8 @@ export default class Content extends Widget {
       endCol = verticalLinesPosition.length - 1
     }
 
-    this.ctx.clearRect(offsetLeft, offsetTop, contentWidth, contentHeight)
-
-    const cellsUpdate: any = []
-    const mergeCache: any = {}
+    const cellsUpdate: CellPositionInfo[] = []
+    const mergeCache: Dictionary<number> = {}
 
     for (let r = startRow; r <= endRow; r++) {
       if (worksheet.rowsHidden && worksheet.rowsHidden.includes(r)) {
@@ -226,7 +231,6 @@ export default class Content extends Widget {
         const startAxisX = c === 0 ? -scrollLeft : verticalLinesPosition[c - 1] - scrollLeft
         const endAxisX = verticalLinesPosition[c] - scrollLeft
 
-
         if (worksheet.cells[r][c] !== null) {
           const value = worksheet.cells[r][c]
 
@@ -234,7 +238,7 @@ export default class Content extends Widget {
             const mergeMainRow = value.mc!.rs
             const mergeMainCol = value.mc!.cs
             const mergeCacheKey = mergeMainRow + '_' + mergeMainCol
-            if (isNaN(mergeCache[mergeCacheKey])) {
+            if (isNullish(mergeCache[mergeCacheKey])) {
               const mergeMainEndRow = value.mc!.rd
               const mergeMainEndCol = value.mc!.cd
               const mergeMainStartAxisX = mergeMainCol === 0 ? -scrollLeft : verticalLinesPosition[mergeMainCol - 1] - scrollLeft
@@ -295,7 +299,7 @@ export default class Content extends Widget {
           const value = worksheet.cells[row][col]?.v || ''
 
           // TODO: 需要考虑值格式化之后的文本高
-          const { width:textWidth } = this.ctx.measureText(value.toString())
+          const { width: textWidth } = this.brush.ctx.measureText(value.toString())
 
           const startAxisX = col === 0 ? -scrollLeft : verticalLinesPosition[col - 1] - scrollLeft
           const endAxisX = verticalLinesPosition[col] - scrollLeft
@@ -337,26 +341,30 @@ export default class Content extends Widget {
       const { r, c, sx, sy, ex, ey } = cellsUpdate[cellsUpdateIdx]
       const cell = worksheet.cells[r][c]
       if (!cell) {
-        this.drawNullCell(worksheet, r, c, sx, sy, ex, ey, offsetLeft, offsetTop, overflowMap, scrollLeft, scrollTop, startRow, startCol, endRow, endCol)
+        this.drawNullCell(worksheet, r, c, sx, sy, ex, ey, overflowMap, startCol, endCol)
       } else {
         if (isNullish(cell.v) || !isNullish(cell.v) && cell?.v?.toString().length === 0) {
-          this.drawNullCell(worksheet, r, c, sx, sy, ex, ey, offsetLeft, offsetTop, overflowMap, scrollLeft, scrollTop, startRow, startCol, endRow, endCol)
+          this.drawNullCell(worksheet, r, c, sx, sy, ex, ey, overflowMap, startCol, endCol)
         } else {
-          this.drawCell(worksheet, r, c, sx, sy, ex, ey, offsetLeft, offsetTop, overflowMap, scrollLeft, scrollTop, startRow, startCol, endRow, endCol)
+          this.drawCell(worksheet, r, c, sx, sy, ex, ey, overflowMap, startCol, endCol)
         }
       }
     }
-
-    this.ctx.restore()
   }
 
   inView(col: number, row: number, scrollleft: number, scrollTop: number) {
     //
   }
 
-  drawNullCell(worksheet: Sheet, row: number, col: number, startAxisX: number, startAxisY: number, endAxisX: number, endAxisY: number, offsetLeft: number, offsetTop: number, overflowMap: Map<number, Map<number, any>>, scrollLeft: number, scrollTop: number, startRow: number, startCol: number, endRow: number, endCol: number) {
+  drawNullCell(worksheet: Sheet, row: number, col: number, startAxisX: number, startAxisY: number, endAxisX: number, endAxisY: number, overflowMap: OverflowMap, startCol: number, endCol: number) {
+    const { columnHeaderHeight, rowHeaderWidth, styles: { cell: cellStyles } } = this.polymersheet.store
     // TODO: 背景色
     const cellOverflowInfo = this.getCellOverflowInfo(row, col, endCol, overflowMap)
+    const borderStyles = {
+      lineWidth: cellStyles?.default?.borderWidth,
+      strokeStyle: cellStyles?.default?.borderColor
+    }
+
     if (cellOverflowInfo?.colLast) {
       const { mainCol, mainRow } = cellOverflowInfo
       this.drawOverflowCell(
@@ -364,40 +372,36 @@ export default class Content extends Widget {
         mainRow,
         mainCol,
         startCol,
-        endCol,
-        overflowMap,
-        scrollLeft,
-        scrollTop,
-        offsetLeft,
-        offsetTop,
+        endCol
       )
     }
 
+    this.brush.save().translate(rowHeaderWidth, columnHeaderHeight)
+
+    // 右边框
     if ((cellOverflowInfo && cellOverflowInfo.colLast) || !cellOverflowInfo) {
-      this.ctx.save()
-      this.ctx.translate(offsetLeft - scrollLeft, offsetTop - scrollTop)
-      this.ctx.strokeStyle = '#dfdfdf'
-      this.ctx.lineWidth = 1
-      this.ctx.beginPath()
-      this.ctx.moveTo(endAxisX - 0.5, endAxisY - 0.5)
-      this.ctx.lineTo(endAxisX - 0.5, startAxisY)
-      this.ctx.stroke()
-      this.ctx.restore()
+      this.brush
+        .line(
+          { x: endAxisX, y: startAxisY },
+          { x: endAxisX, y: endAxisY },
+          borderStyles
+        )
     }
 
-    // 底部边框
-    this.ctx.save()
-    this.ctx.translate(offsetLeft - scrollLeft, offsetTop - scrollTop)
-    this.ctx.strokeStyle = '#dfdfdf'
-    this.ctx.lineWidth = 1
-    this.ctx.beginPath()
-    this.ctx.moveTo(startAxisX, endAxisY - 0.5)
-    this.ctx.lineTo(endAxisX - 0.5, endAxisY - 0.5)
-    this.ctx.stroke()
-    this.ctx.restore()
+    // 底边框
+    this.brush
+      .line(
+        { x: startAxisX, y: endAxisY },
+        { x: endAxisX, y: endAxisY },
+        borderStyles
+      )
+      .restore()
   }
 
-  drawOverflowCell(worksheet: Sheet, mainRow: number, mainCol: number, startCol: number, endCol: number, overflowMap: Map<number, Map<number, any>>, scrollLeft: number, scrollTop: number, offsetLeft: number, offsetTop: number) {
+  drawOverflowCell(worksheet: Sheet, mainRow: number, mainCol: number, startCol: number, endCol: number) {
+    const { rowHeaderWidth, columnHeaderHeight } = this.polymersheet.store
+    const { scrollTop = 0, scrollLeft = 0 } = worksheet
+
     let startAxisX
     let startAxisY
 
@@ -419,7 +423,7 @@ export default class Content extends Widget {
     const textAreaWidth = endAxisX - startAxisX
     const textAreaHeight = endAxisY - startAxisY
 
-    const textInfo = getCellTextInfo(this.ctx, worksheet.cells[mainRow][mainCol]!, {
+    const textInfo = getCellTextInfo(this.brush.ctx, worksheet.cells[mainRow][mainCol]!, {
       textAreaWidth,
       textAreaHeight,
       mainRow,
@@ -428,26 +432,30 @@ export default class Content extends Widget {
       letterSpacing: 2,
     })
 
-    this.ctx.save()
-    this.ctx.translate(offsetLeft - scrollLeft, offsetTop - scrollTop)
+    this.brush.save().translate(rowHeaderWidth, columnHeaderHeight)
 
     if (!isNullish(textInfo)) {
       this.drawText(textInfo, startAxisX, startAxisY)
     }
 
-    this.ctx.restore()
+    this.brush.restore()
   }
 
-  drawCell(worksheet: Sheet, row: number, col: number, startAxisX: number, startAxisY: number, endAxisX: number, endAxisY: number, offsetLeft: number, offsetTop: number, overflowMap: Map<number, Map<number, any>>, scrollLeft: number, scrollTop: number, startRow: number, startCol: number, endRow: number, endCol: number) {
+  drawCell(worksheet: Sheet, row: number, col: number, startAxisX: number, startAxisY: number, endAxisX: number, endAxisY: number, overflowMap: OverflowMap, startCol: number, endCol: number) {
     const cell = worksheet.cells[row][col]
 
     if (!cell) {
       return
     }
 
+    const { rowHeaderWidth, columnHeaderHeight, styles: { cell: cellStyles } } = this.polymersheet.store
     const cellOverflowInfo = this.getCellOverflowInfo(row, col, endCol, overflowMap)
-
+    const borderStyles = {
+      lineWidth: cellStyles?.default?.borderWidth,
+      strokeStyle: cellStyles?.default?.borderColor
+    }
     let needToDrawRightBorder = true
+
     if (cellOverflowInfo) {
       if (cellOverflowInfo.colLast) {
         const { mainCol, mainRow } = cellOverflowInfo
@@ -457,18 +465,13 @@ export default class Content extends Widget {
           mainCol,
           startCol,
           endCol,
-          overflowMap,
-          scrollLeft,
-          scrollTop,
-          offsetLeft,
-          offsetTop,
         )
       } else {
         needToDrawRightBorder = false
       }
     }
 
-    const textInfo = getCellTextInfo(this.ctx, cell, {
+    const textInfo = getCellTextInfo(this.brush.ctx, cell, {
       textAreaWidth: endAxisX - startAxisX,
       textAreaHeight: endAxisY - startAxisY,
       mainRow: row,
@@ -477,33 +480,42 @@ export default class Content extends Widget {
       letterSpacing: 2,
     })
 
-    this.ctx.save()
-    this.ctx.translate(offsetLeft - scrollLeft, offsetTop - scrollTop)
+    this.brush.save().translate(rowHeaderWidth, columnHeaderHeight)
+
+    // 右边框
+    if (needToDrawRightBorder) {
+      this.brush
+        .line(
+          { x: endAxisX, y: startAxisY },
+          { x: endAxisX, y: endAxisY },
+          borderStyles
+        )
+    }
+
+    // 底边框
+    this.brush
+      .line(
+        { x: startAxisX, y: endAxisY },
+        { x: endAxisX, y: endAxisY },
+        borderStyles
+      )
+
     if (!cellOverflowInfo) {
       this.drawText(textInfo, startAxisX, startAxisY)
     }
 
-    // 底部框
-    this.ctx.strokeStyle = '#dfdfdf'
-    this.ctx.lineWidth = 1
-    this.ctx.beginPath()
-    this.ctx.moveTo(startAxisX, endAxisY - 0.5)
-    this.ctx.lineTo(endAxisX - 0.5, endAxisY - 0.5)
-
-    // 右边框
-    if (needToDrawRightBorder) {
-      this.ctx.lineTo(endAxisX - 0.5, startAxisY)
-    }
-    this.ctx.stroke()
-    this.ctx.restore()
+    this.brush.restore()
   }
 
-  drawText(textInfo: any, startAxisX: number, startAxisY: number) {
+  drawText(textInfo: TextInfo, startAxisX: number, startAxisY: number) {
     const { lines } = textInfo
 
     for (let i = 0; i < lines.length; i++) {
       const { text, top, left } = lines[i]
-      this.ctx.fillText(text, startAxisX + left, startAxisY + top)
+      this.brush.text(
+        text,
+        { x: startAxisX + left, y: startAxisY + top }
+      )
     }
   }
 
@@ -563,7 +575,7 @@ export default class Content extends Widget {
     }
   }
 
-  getCellOverflowInfo(row: number, col: number, endCol: number, overflowMap: Map<number, Map< number, any>>) {
+  getCellOverflowInfo(row: number, col: number, endCol: number, overflowMap: OverflowMap) {
     let colIn = false
     let colLast = false
     const sameRowOverflowMap = overflowMap.get(row)
