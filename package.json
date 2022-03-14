@@ -65,5 +65,8 @@
     "webpack-cli": "^4.7.0",
     "webpack-dev-server": "^3.11.2"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@types/throttle-debounce": "^2.1.0",
+    "throttle-debounce": "^3.0.1"
+  }
 }

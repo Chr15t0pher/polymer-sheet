@@ -1,5 +1,5 @@
 import { Cell, TextAlign, TextBaseline, TextWrap } from '../declare'
-import { isEnglish, isChinese } from './helpers'
+import { isEnglish, isChinese, isNullish } from './helpers'
 
 export interface TextLine {
   text: string,
@@ -13,16 +13,26 @@ export interface TextInfo {
   lines: TextLine[]
 }
 
+export interface TextInfoOptions {
+  textAreaWidth: number,
+  textAreaHeight: number,
+  mainRow: number,
+  mainCol: number,
+  /** vertical gap between two lines */
+  leading: number,
+  letterSpacing: number
+}
+
 // TODO: 把水平和垂直的字符间距摘出来成配置项
 const horizontalSpace = 2
 const verticalSpace = 2
 const rt = 0
 
-export function getCellTextInfo(ctx: CanvasRenderingContext2D, cell: Cell, options: { textAreaWidth: number, textAreaHeight: number, mainRow: number, mainCol: number, leading: number, letterSpacing: number }) {
+export function getCellTextInfo(ctx: CanvasRenderingContext2D, cell: Cell, options: TextInfoOptions) {
   const textAlign = cell.s?.ta || TextAlign.start
   const textBaseline = cell.s?.tba || TextBaseline.middle
-  const value = cell.v === void 0 || cell.v === null ? null : cell.w === void 0 || cell.w === null ? cell.v.toString() : cell.w
-  const textWrap = cell.s === void 0 || cell.s === null || cell.s.tw === void 0 || cell.s.tw === null ? TextWrap.break : cell.s.tw
+  const value = isNullish(cell.v) ? null : isNullish(cell.w) ? cell.v.toString() : cell.w
+  const textWrap = isNullish(cell.s) || isNullish(cell.s.tw) ? TextWrap.break : cell.s.tw
   const { textAreaHeight, textAreaWidth, leading, letterSpacing } = options
   const textInfo: TextInfo = { lines: [] }
 
@@ -83,6 +93,7 @@ export function getCellTextInfo(ctx: CanvasRenderingContext2D, cell: Cell, optio
       const lineHeight = actualBoundingBoxAscent + actualBoundingBoxDescent + leading
       const lineWidth = textAreaWidth
 
+      // 默认 当 textBaseline === TextBaseline.bottom 时
       let top = lineHeight - leading / 2
       if (textBaseline === TextBaseline.top) {
         top = allLinesHeight + lineHeight - leading / 2 - actualBoundingBoxDescent - actualBoundingBoxAscent

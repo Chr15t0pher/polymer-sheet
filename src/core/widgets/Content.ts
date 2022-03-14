@@ -7,28 +7,33 @@ import { TextWrap, TextAlign } from '../../declare'
 import type { Sheet } from '../../declare'
 import type { OverflowMap } from '../Store'
 import type { TextInfo } from './../../utils/text'
+import type { DrawingStyles } from '../../utils/draw'
 
 interface CellPositionInfo {
+  /** rowIndex */
   r: number,
+  /** columnIndex */
   c: number,
+  /** startAxisX */
   sx: number,
+  /** startAxisY */
   sy: number,
+  /** endAxisX */
   ex: number,
+  /** endAxisY */
   ey: number,
 }
 
 export default class Content extends Widget {
-  private readonly parentNodeSelector = '#polymersheet__view'
   private readonly nodeId = 'polymersheet__content'
 
   private brush!: Brush
 
   mount() {
-    const { contentWidth, contentHeight } = this.polymersheet.store
-    const parentNode = this.polymersheet.rootNode.find(this.parentNodeSelector)
+    const parentNode = this.polymersheet.viewNode
 
     parentNode?.prepend(`
-			<canvas id="${this.nodeId}" style="width: ${contentWidth}px; height: ${contentHeight}px"></canvas>
+			<canvas id="${this.nodeId}"></canvas>
 		`)
 
     this.brush = new Brush(`#${this.nodeId}`)
@@ -51,15 +56,17 @@ export default class Content extends Widget {
   }
 
   drawUpperLeftCorner() {
-    const { columnHeaderHeight, rowHeaderWidth, styles: { upperLeftCorner: styles } } = this.polymersheet.store
+    const { columnHeaderHeight, rowHeaderWidth, styles: { upperLeftCorner: styles = {} } } = this.polymersheet.store
+    const { borderWidth = 1 } = styles
+    const halfBorder = borderWidth / 2
 
     this.brush.cell(
       { x: 0, y: 0	},
-      {	x: rowHeaderWidth, y: columnHeaderHeight	},
+      {	x: rowHeaderWidth - halfBorder, y: columnHeaderHeight - halfBorder	},
       {
-        lineWidth: styles?.borderWidth,
-        strokeStyle: styles?.borderColor,
-        fillStyle: styles?.backgroundColor
+        lineWidth: borderWidth,
+        strokeStyle: styles.borderColor,
+        fillStyle: styles.backgroundColor
       }
     )
   }
@@ -70,9 +77,11 @@ export default class Content extends Widget {
       contentHeight,
       horizontalLinesPosition,
       rowHeaderWidth,
-      styles: { header: headerStyles }
+      styles: { header: headerStyles = {} }
     } = this.polymersheet.store
     const { scrollTop = 0 } = worksheet
+    const { borderWidth = 1 } = headerStyles.default || {}
+    const halfBorder = borderWidth / 2
 
     let startRow = findCellPosition(horizontalLinesPosition, scrollTop)
     let endRow = findCellPosition(horizontalLinesPosition, scrollTop + contentHeight)
@@ -88,7 +97,7 @@ export default class Content extends Widget {
     this.brush.save().translate(0, columnHeaderHeight)
 
     for (let i = startRow; i <= endRow; i++) {
-      if (worksheet.rowsHidden && worksheet.rowsHidden.includes(i)) {
+      if (worksheet.rowsHidden?.includes(i)) {
         continue
       }
 
@@ -98,9 +107,9 @@ export default class Content extends Widget {
       this.brush
         .cell(
           { x: 0, y: preCurrentRowEndAxisY },
-          {	x: rowHeaderWidth, y: currentRowEndAxisY },
+          {	x: rowHeaderWidth - halfBorder, y: currentRowEndAxisY - halfBorder },
           {
-            lineWidth: headerStyles?.default?.borderWidth,
+            lineWidth: borderWidth,
             strokeStyle: headerStyles?.default?.borderColor,
             fillStyle: headerStyles?.default?.backgroundColor
           },
@@ -108,12 +117,13 @@ export default class Content extends Widget {
         .text(
           `${i + 1}`,
           {
-            x: Math.round(rowHeaderWidth / 2),
-            y: Math.round((currentRowEndAxisY + preCurrentRowEndAxisY) / 2)
+            x: (rowHeaderWidth - borderWidth) / 2,
+            y: (currentRowEndAxisY + preCurrentRowEndAxisY - borderWidth) / 2
           },
           {
             fillStyle: headerStyles?.default?.fontColor,
-            font: `${headerStyles?.default?.fontSize}px ${headerStyles?.default?.fontFamily}`,
+            fontSize: headerStyles?.default?.fontSize,
+            fontFamily: headerStyles?.default?.fontFamily,
             textAlign: 'center',
             textBaseline: 'middle'
           }
@@ -129,9 +139,11 @@ export default class Content extends Widget {
       contentWidth,
       verticalLinesPosition,
       columnHeaderHeight,
-      styles: { header: headerStyles }
+      styles: { header: headerStyles = {} }
     } = this.polymersheet.store
     const { scrollLeft = 0 } = worksheet
+    const { borderWidth = 1 } = headerStyles.default || {}
+    const halfBorder = borderWidth / 2
 
     let startCol = findCellPosition(verticalLinesPosition, scrollLeft)
     let endCol = findCellPosition(verticalLinesPosition, scrollLeft + contentWidth)
@@ -157,9 +169,9 @@ export default class Content extends Widget {
       this.brush
         .cell(
           { x: preCurrentColEndAxisX, y: 0	},
-          {	x: currentColEndAxisX, y: columnHeaderHeight },
+          {	x: currentColEndAxisX - halfBorder, y: columnHeaderHeight - halfBorder },
           {
-            lineWidth: headerStyles?.default?.borderWidth,
+            lineWidth: borderWidth,
             strokeStyle: headerStyles?.default?.borderColor,
             fillStyle: headerStyles?.default?.backgroundColor
           },
@@ -167,12 +179,13 @@ export default class Content extends Widget {
         .text(
           columnNum,
           {
-            x: Math.round((preCurrentColEndAxisX + currentColEndAxisX) / 2),
-            y: Math.round(columnHeaderHeight / 2)
+            x: (preCurrentColEndAxisX + currentColEndAxisX - borderWidth) / 2,
+            y: (columnHeaderHeight - borderWidth) / 2
           },
           {
             fillStyle: headerStyles?.default?.fontColor,
-            font: `${headerStyles?.default?.fontSize}px ${headerStyles?.default?.fontFamily}`,
+            fontSize: headerStyles?.default?.fontSize,
+            fontFamily: headerStyles?.default?.fontFamily,
             textAlign: 'center',
             textBaseline: 'middle'
           }
@@ -216,7 +229,7 @@ export default class Content extends Widget {
     const mergeCache: Dictionary<number> = {}
 
     for (let r = startRow; r <= endRow; r++) {
-      if (worksheet.rowsHidden && worksheet.rowsHidden.includes(r)) {
+      if (worksheet.rowsHidden?.includes(r)) {
         continue
       }
 
@@ -290,7 +303,7 @@ export default class Content extends Widget {
           continue
         }
 
-        if (worksheet.colsHidden && worksheet.colsHidden.includes(col)) {
+        if (worksheet.colsHidden?.includes(col)) {
           continue
         }
 
@@ -357,7 +370,7 @@ export default class Content extends Widget {
   }
 
   drawNullCell(worksheet: Sheet, row: number, col: number, startAxisX: number, startAxisY: number, endAxisX: number, endAxisY: number, overflowMap: OverflowMap, startCol: number, endCol: number) {
-    const { columnHeaderHeight, rowHeaderWidth, styles: { cell: cellStyles } } = this.polymersheet.store
+    const { columnHeaderHeight, rowHeaderWidth, styles: { cell: cellStyles = {} } } = this.polymersheet.store
     // TODO: 背景色
     const cellOverflowInfo = this.getCellOverflowInfo(row, col, endCol, overflowMap)
     const borderStyles = {
@@ -378,24 +391,12 @@ export default class Content extends Widget {
 
     this.brush.save().translate(rowHeaderWidth, columnHeaderHeight)
 
-    // 右边框
-    if ((cellOverflowInfo && cellOverflowInfo.colLast) || !cellOverflowInfo) {
-      this.brush
-        .line(
-          { x: endAxisX, y: startAxisY },
-          { x: endAxisX, y: endAxisY },
-          borderStyles
-        )
+    if (cellOverflowInfo?.colLast || !cellOverflowInfo) {
+      this.drawBorderRight(startAxisY, endAxisX, endAxisY, borderStyles)
     }
 
-    // 底边框
-    this.brush
-      .line(
-        { x: startAxisX, y: endAxisY },
-        { x: endAxisX, y: endAxisY },
-        borderStyles
-      )
-      .restore()
+    this.drawBorderBottom(startAxisX, endAxisX, endAxisY, borderStyles)
+    this.brush.restore()
   }
 
   drawOverflowCell(worksheet: Sheet, mainRow: number, mainCol: number, startCol: number, endCol: number) {
@@ -448,7 +449,7 @@ export default class Content extends Widget {
       return
     }
 
-    const { rowHeaderWidth, columnHeaderHeight, styles: { cell: cellStyles } } = this.polymersheet.store
+    const { rowHeaderWidth, columnHeaderHeight, styles: { cell: cellStyles = {} } } = this.polymersheet.store
     const cellOverflowInfo = this.getCellOverflowInfo(row, col, endCol, overflowMap)
     const borderStyles = {
       lineWidth: cellStyles?.default?.borderWidth,
@@ -482,29 +483,37 @@ export default class Content extends Widget {
 
     this.brush.save().translate(rowHeaderWidth, columnHeaderHeight)
 
-    // 右边框
     if (needToDrawRightBorder) {
-      this.brush
-        .line(
-          { x: endAxisX, y: startAxisY },
-          { x: endAxisX, y: endAxisY },
-          borderStyles
-        )
+      this.drawBorderRight(startAxisY, endAxisX, endAxisY, borderStyles)
     }
 
-    // 底边框
-    this.brush
-      .line(
-        { x: startAxisX, y: endAxisY },
-        { x: endAxisX, y: endAxisY },
-        borderStyles
-      )
+    this.drawBorderBottom(startAxisX, endAxisX, endAxisY, borderStyles)
 
     if (!cellOverflowInfo) {
       this.drawText(textInfo, startAxisX, startAxisY)
     }
 
     this.brush.restore()
+  }
+
+  drawBorderRight(startAxisY: number, endAxisX: number, endAxisY: number, borderStyles: DrawingStyles) {
+    const halfBorder = (borderStyles?.lineWidth || 1) / 2
+    this.brush
+      .line(
+        { x: endAxisX - halfBorder, y: startAxisY },
+        { x: endAxisX - halfBorder, y: endAxisY },
+        borderStyles
+      )
+  }
+
+  drawBorderBottom(startAxisX: number, endAxisX: number, endAxisY: number, borderStyles: DrawingStyles) {
+    const halfBorder = (borderStyles?.lineWidth || 1) / 2
+    this.brush
+      .line(
+        { x: startAxisX, y: endAxisY - halfBorder },
+        { x: endAxisX, y: endAxisY - halfBorder },
+        borderStyles
+      )
   }
 
   drawText(textInfo: TextInfo, startAxisX: number, startAxisY: number) {
@@ -514,7 +523,10 @@ export default class Content extends Widget {
       const { text, top, left } = lines[i]
       this.brush.text(
         text,
-        { x: startAxisX + left, y: startAxisY + top }
+        { x: startAxisX + left, y: startAxisY + top },
+        {
+          fontSize: 10
+        }
       )
     }
   }

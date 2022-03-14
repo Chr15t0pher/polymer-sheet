@@ -1,6 +1,7 @@
 toolbar-border-color = #c0c0c0
 scrollbar-border-color = #dcdcdc
-scrollbar-size = 10px
+scrollbar-track-size = 12px
+scrollbar-thumb-size = 10px
 shim-background-color = #F8F8F8
 scrollbar-thumb-color = #dadce0
 
@@ -60,6 +61,7 @@ table
 
 #polymersheet__content
 	position: absolute
+	object-fit: contain
 
 #polymersheet__toolbar
 	border-bottom: 1px solid toolbar-border-color
@@ -86,7 +88,7 @@ table
 	background: white
 
 	&::-webkit-scrollbar-thumb
-		border-radius: (scrollbar-size / 2)px
+		border-radius: (scrollbar-thumb-size / 2)px
 		border: 1px solid white
 		background: scrollbar-thumb-color
 		&:hover
@@ -102,30 +104,35 @@ table
 		border-bottom-width: 0
 		overflow: hidden scroll
 
-		> div
-			width: 1px
-
 		&::-webkit-scrollbar
-			width: scrollbar-size
+			width: scrollbar-thumb-size
 
 	&--horizontal
-		right: 0
+		left: 0
 		bottom: 0
 		border-left-width: 0
-		overflow-x: scroll
-
-		> div
-			height: 1px
+		border-right-width: 0
+		overflow: scroll hidden
 
 		&::-webkit-scrollbar
-			height: scrollbar-size
-			width: scrollbar-size + 1px
+			height: scrollbar-thumb-size
 
-		&::-webkit-scrollbar-corner
-			background: shim-background-color
-			border-left: 1px solid scrollbar-border-color
+.polymersheet__scrollbar_inner--vertical
+	width: 1px
 
-.polymersheet__cells_overlay
+.polymersheet__scrollbar_inner--horizontal
+	height: 1px
+
+.polymersheet__scrollbar_corner
+	position: absolute
+	right: 0
+	bottom: 0
+	width: scrollbar-track-size
+	height: scrollbar-track-size
+	background: shim-background-color
+	border: 1px solid scrollbar-border-color
+
+#polymersheet__cells_overlay
 	position: absolute
 
 

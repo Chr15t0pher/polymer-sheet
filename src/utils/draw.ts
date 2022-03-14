@@ -1,12 +1,21 @@
-import { getType, isOdd, pick } from './helpers'
+import { getType, isOdd, isNullish } from './helpers'
+import { FontWeight, FontStyle } from '../declare'
 
 export interface DrawingStyles extends
   Partial<CanvasFillStrokeStyles>,
   Partial<Omit<CanvasPathDrawingStyles, 'getLineDash' | 'setLineDash'>>,
-  Partial<CanvasTextDrawingStyles>,
   Partial<CanvasShadowStyles>,
   Partial<CanvasCompositing> {
   lineDash?: number[],
+}
+
+export interface TextStyles extends
+  Partial<CanvasFillStrokeStyles>,
+  Partial<Omit<CanvasTextDrawingStyles, 'font'>> {
+  fontSize?: number,
+  fontFamily?: string,
+  fontWeight?: FontWeight,
+  fontStyle?: FontStyle
 }
 
 export interface Point {
@@ -14,16 +23,29 @@ export interface Point {
   y: number,
 }
 
+const round = Math.round
+
+const DefaultFontFamily = 'Roboto,RobotoDraft,Helvetica,Arial,sans-serif'
+
+function defuzzyPixel(x: number, lineWidth: number) {
+  if (!lineWidth) {
+    return round(x)
+  }
+
+  const doubledX = round(x * 2)
+  return isOdd(doubledX + round(lineWidth))
+    ? (doubledX - 1) / 2
+    : doubledX / 2
+}
+
 /**
  * 对坐标值进行处理，解决奇数像素的线绘制时会模糊的问题
  */
-function defuzzy(point: Point, lineWidth: number) {
+function defuzzy(point: Point, lineWidth: number, scale: number) {
   let { x, y } = point
 
-  if (isOdd(lineWidth)) {
-    x = Math.floor(x) - 0.5
-    y = Math.floor(y) - 0.5
-  }
+  x = defuzzyPixel(x * scale, lineWidth)
+  y = defuzzyPixel(y * scale, lineWidth)
 
   return { x, y }
 }
@@ -31,6 +53,7 @@ function defuzzy(point: Point, lineWidth: number) {
 export class Brush {
   canvas!: HTMLCanvasElement
   ctx!: CanvasRenderingContext2D
+  scale!: number
 
   constructor(target: HTMLCanvasElement | string) {
     if (typeof target === 'string') {
@@ -48,14 +71,16 @@ export class Brush {
     this.ctx = this.canvas.getContext('2d')!
   }
 
-  size(width: number, height: number, scaleX = 1, scaleY?: number) {
-    if (!scaleY) {
-      scaleY = scaleX
-    }
-
-    this.canvas.width = width * scaleX
-    this.canvas.height = height * scaleY
-    this.ctx.scale(scaleX, scaleY)
+  size(width: number, height: number, dpr = 1) {
+    this.scale = dpr
+    const canvasWidth = Math.floor(width * dpr)
+    const canvasHeight = Math.floor(height * dpr)
+    this.canvas.width = canvasWidth
+    this.canvas.height = canvasHeight
+    const styleWidth = canvasWidth / dpr
+    const styleHeight = styleWidth * canvasHeight / canvasWidth
+    this.canvas.style.width = `${styleWidth}px`
+    this.canvas.style.height = `${styleHeight}px`
 
     return this
   }
@@ -82,7 +107,8 @@ export class Brush {
   }
 
   translate(x: number, y: number) {
-    this.ctx.translate(x, y)
+    const { scale } = this
+    this.ctx.translate(round(x * scale), round(y * scale))
     return this
   }
 
@@ -92,15 +118,22 @@ export class Brush {
 	 * @param styles
 	 * @returns
 	 */
-  polyline(points: Point[], styles: DrawingStyles) {
+  polyline(points: Point[], styles: DrawingStyles, needClosePath?: boolean) {
+    const { scale } = this
     const filteredStyles = {...styles}
-
-    this.save()
-    this.ctx.beginPath()
 
     // 移除无关属性
     delete filteredStyles.lineDash
-    filteredStyles.lineWidth = filteredStyles.lineWidth || 1
+
+    const needFill = !isNullish(filteredStyles.fillStyle)
+    const needStroke = !isNullish(filteredStyles.strokeStyle)
+    let lineWidth = needFill && !needStroke ? 0 : (filteredStyles.lineWidth || 1)
+    // The fill operation will reduces the border width by half
+    lineWidth = Math.max(Math.floor(lineWidth * scale), 1)
+    filteredStyles.lineWidth = needFill ? lineWidth * 2 : lineWidth
+
+    this.save()
+    this.ctx.beginPath()
 
     for (const styleName in filteredStyles) {
       // @ts-ignore
@@ -109,19 +142,21 @@ export class Brush {
 
     styles.lineDash && this.ctx.setLineDash(styles.lineDash)
 
+    points = points.map(point => defuzzy(point, filteredStyles.lineWidth!, scale))
+
     const [startPoint, ...restPoints] = points
-    const { lineWidth } = filteredStyles
-    const newStartPoint = defuzzy(startPoint, lineWidth)
 
-    this.ctx.moveTo(newStartPoint.x, newStartPoint.y)
-
+    this.ctx.moveTo(startPoint.x, startPoint.y)
     restPoints.forEach(point => {
-      point = defuzzy(point, lineWidth)
       this.ctx.lineTo(point.x, point.y)
     })
 
-    styles.strokeStyle && this.ctx.stroke()
-    styles.fillStyle && this.ctx.fill()
+    if (needClosePath) {
+      this.ctx.closePath()
+    }
+
+    filteredStyles.strokeStyle && this.ctx.stroke()
+    needFill && this.ctx.fill()
 
     this.restore()
 
@@ -145,10 +180,10 @@ export class Brush {
         point1,
         { x: point2.x, y: point1.y},
         point2,
-        { x: point1.x, y: point2.y },
-        point1
+        { x: point1.x, y: point2.y }
       ],
-      styles
+      styles,
+      true
     )
   }
 
@@ -159,9 +194,10 @@ export class Brush {
 	 * @param styles
 	 */
   cell(point1: Point, point2: Point, styles: DrawingStyles = {}) {
+    const lineWidth = styles.lineWidth || 1
     const backgroundStyles = {
       ...styles,
-      strokeStyle: styles.fillStyle
+      strokeStyle: undefined
     }
 
     const borderStyles = {
@@ -170,14 +206,14 @@ export class Brush {
     }
 
     this.rect(
-      { x: point1.x + 1, y: point1.y + 1},
-      { x: point2.x - 1, y: point2.y - 1},
+      { x: point1.x, y: point1.y },
+      { x: point2.x - lineWidth * 0.5, y: point2.y - lineWidth * 0.5 },
       backgroundStyles
     )
 
     this.polyline(
       [
-        { x: point2.x, y: point1.y},
+        { x: point2.x, y: point1.y },
         point2,
         { x: point1.x, y: point2.y },
       ],
@@ -187,14 +223,30 @@ export class Brush {
     return this
   }
 
-  text(txt: string, pos: Point, styles: DrawingStyles = {}) {
+  text(txt: string, pos: Point, styles: TextStyles = {}) {
+    const { scale } = this
+    let { fontSize } = styles
+
+    if (fontSize) {
+      fontSize = round(fontSize * scale)
+    }
+
+    const {
+      fontWeight = FontWeight.normal,
+      fontStyle = FontStyle.normal,
+      fontFamily = DefaultFontFamily
+    } = styles
+
     this.save()
 
     for (const styleName in styles) {
       // @ts-ignore
       this.ctx[styleName] = styles[styleName]
     }
-    this.ctx.fillText(txt, pos.x, pos.y)
+
+    this.ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`
+
+    this.ctx.fillText(txt, round(pos.x * scale), round(pos.y * scale))
     this.restore()
 
     return this

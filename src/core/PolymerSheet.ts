@@ -11,11 +11,18 @@ import type { Widget } from './widgets/Widget'
 import type { Dom } from '../utils'
 
 export class PolymerSheet {
+  private readonly rootNodeId = 'polymersheet'
+  private readonly viewNodeId = 'polymersheet__view'
+  private readonly viewGridClassName = 'polymersheet__view_grid'
+
+  containerNode!: Dom
+  rootNode!: Dom
+  viewNode!: Dom
+  viewGridNodes!: Dom[]
+
   store = store
 
   widgets: Widget[] = []
-
-  rootNode!: Dom
 
   constructor(options: Partial<PolymerSheetOptions>) {
     this.store = mergeOptions(this.store, options)
@@ -32,7 +39,7 @@ export class PolymerSheet {
 
   mount() {
     this.renderSkeleton()
-    this.calcRootNodeSize()
+    this.calcContainerNodeSize()
     this.widgets.forEach(w => w.mount())
   }
 
@@ -53,23 +60,27 @@ export class PolymerSheet {
   }
 
   private renderSkeleton() {
-    this.rootNode = d(this.store.containerId)
-    this.rootNode.append(`
-			<div id="polymersheet">
-				<div id="polymersheet__view">
+    this.containerNode = d(this.store.containerId)
+    this.containerNode.append(`
+			<div id="${this.rootNodeId}">
+				<div id="${this.viewNodeId}">
 					<table>
 						<tr>
-							<td class="polymersheet__view_grid"></td>
-							<td class="polymersheet__view_grid"></td>
+							<td class="${this.viewGridClassName}"></td>
+							<td class="${this.viewGridClassName}"></td>
 						</tr>
 						<tr>
-							<td class="polymersheet__view_grid"></td>
-							<td class="polymersheet__view_grid"></td>
+							<td class="${this.viewGridClassName}"></td>
+							<td class="${this.viewGridClassName}"></td>
 						</tr>
 					</table>
 				</div>
 			</div>
 		`)
+
+    this.rootNode = this.containerNode.find(`#${this.rootNodeId}`)
+    this.viewNode = this.containerNode.find(`#${this.viewNodeId}`)
+    this.viewGridNodes = this.containerNode.findAll(`.${this.viewGridClassName}`)
   }
 
   private calcWorksheetActualSize(sheet: Sheet) {
@@ -78,7 +89,7 @@ export class PolymerSheet {
     for (let i = 0; i < rowLen; i++) {
       let rowHeight = this.store.defaultRowHeight
 
-      if (sheet.rowsHidden && sheet.rowsHidden.includes(i)) {
+      if (sheet.rowsHidden?.includes(i)) {
         this.store.horizontalLinesPosition.push(this.store.worksheetActualHeight)
         continue
       }
@@ -87,7 +98,7 @@ export class PolymerSheet {
         rowHeight = sheet.rowsHeightMap[i]
       }
 
-      this.store.worksheetActualHeight += Math.round(rowHeight)
+      this.store.worksheetActualHeight += rowHeight
       this.store.horizontalLinesPosition.push(this.store.worksheetActualHeight)
     }
 
@@ -103,12 +114,12 @@ export class PolymerSheet {
         columnWidth = sheet.colsWidthMap[i]
       }
 
-      this.store.worksheetActualWidth += Math.round(columnWidth)
+      this.store.worksheetActualWidth += columnWidth
       this.store.verticalLinesPosition.push(this.store.worksheetActualWidth)
     }
   }
 
-  private calcRootNodeSize() {
+  calcContainerNodeSize() {
     const {
       rowHeaderWidth,
       toolbarHeight,
@@ -117,10 +128,10 @@ export class PolymerSheet {
       scrollbarSize
     } = this.store
 
-    this.store.rootNodeWidth = this.rootNode.width()
-    this.store.rootNodeHeight = this.rootNode.height()
-    this.store.contentWidth = this.store.rootNodeWidth - scrollbarSize
-    this.store.contentHeight = this.store.rootNodeHeight - scrollbarSize - toolbarHeight - bottomBarHeight
+    this.store.containerNodeWidth = this.containerNode.width()
+    this.store.containerNodeHeight = this.containerNode.height()
+    this.store.contentWidth = this.store.containerNodeWidth - scrollbarSize
+    this.store.contentHeight = this.store.containerNodeHeight - scrollbarSize - toolbarHeight - bottomBarHeight
     this.store.cellsContentWidth = this.store.contentWidth - rowHeaderWidth
     this.store.cellsContentHeight = this.store.contentHeight - columnHeaderHeight
   }

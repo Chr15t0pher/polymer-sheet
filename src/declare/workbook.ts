@@ -7,6 +7,19 @@ export enum DataType {
   Empty = 'z'
 }
 
+export enum FontWeight {
+  light = 'light',
+  normal = 'normal',
+  bold = 'bold',
+  bolder = 'bolder'
+}
+
+export enum FontStyle {
+  normal = 'normal',
+  italic = 'italic',
+  oblique = 'oblique'
+}
+
 export enum TextWrap {
   break = 'break', // 截断
   auto = 'auto', // 自动换行
@@ -47,38 +60,38 @@ export interface Range {
 }
 
 export interface CellStyle {
-  // foreground color
+  /** foreground color */
   fg?: string
-  // background color
+  /** background color */
   bg?: string
 
-  // font family
+  /** font family */
   ff?: string
-  // font size
+  /** font size */
   fs?: number
-  // font color
+  /** font color */
   fc?: string
-  // text wrap
+  /** text wrap */
   tw?: TextWrap
-  // text align
+  /** text align */
   ta?: TextAlign
-  // text vertical align
+  /** text vertical align */
   tba?: TextBaseline
-  // text orientation
+  /** text orientation */
   to?: TextOrientation
 }
 
 export interface Cell {
-  // raw value of the cell
+  /** raw value of the cell */
   v?: string | number | boolean | Date
 
-  // formatted text
+  /** formatted text */
   w?: string
 
-  // data type
+  /** data type */
   t: DataType
 
-  // cell style
+  /** cell style */
   s?: CellStyle
 
   mc?: Range

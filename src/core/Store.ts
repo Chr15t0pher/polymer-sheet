@@ -5,8 +5,8 @@ export type OverflowMap = Map<number, Map<number, { row: number, intervalLeftCol
 export interface Store extends PolymerSheetOptions {
 
   /** 根节点宽高 */
-  rootNodeWidth: number
-  rootNodeHeight: number
+  containerNodeWidth: number
+  containerNodeHeight: number
 
   /** 画布宽高 */
   contentWidth: number
@@ -57,8 +57,8 @@ const store: Store = {
 
   bottomBarHeight: 42,
 
-  rootNodeWidth: 0,
-  rootNodeHeight: 0,
+  containerNodeWidth: 0,
+  containerNodeHeight: 0,
 
   contentWidth: 0,
   contentHeight: 0,
@@ -66,7 +66,7 @@ const store: Store = {
   cellsContentWidth: 0,
   cellsContentHeight: 0,
 
-  devicePixelRatio: 1,
+  devicePixelRatio: window.devicePixelRatio,
 
   zoomRatio: 1,
 
@@ -109,8 +109,7 @@ const store: Store = {
         borderColor: '#c0c0c0',
         backgroundColor: '#f8f9fa',
         fontSize: 11,
-        fontColor: '#555555',
-        fontFamily: 'Roboto,RobotoDraft,Helvetica,Arial,sans-serif'
+        fontColor: '#555555'
       },
       highlight: {
         borderWidth: 1,

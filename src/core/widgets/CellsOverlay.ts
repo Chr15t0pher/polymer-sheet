@@ -1,15 +1,30 @@
 import { Widget } from './Widget'
 
+import type { Dom } from '../../utils'
+
 export default class CellsOverlay extends Widget {
-  private readonly parentNodeSelector = '.polymersheet__view_grid'
+  private readonly nodeId = 'polymersheet__cells_overlay'
+  private node!: Dom
 
   mount() {
-    const { cellsContentWidth, cellsContentHeight } = this.polymersheet.store
-    const parentNode = this.polymersheet.rootNode.findAll(this.parentNodeSelector)[3]
+    const { viewGridNodes } = this.polymersheet
+    const parentNode = viewGridNodes[3]
 
     parentNode?.append(`
-			<div class="polymersheet__cells_overlay" style="width: ${cellsContentWidth}px; height: ${cellsContentHeight}px"></div>
+			<div id="${this.nodeId}"></div>
 		`)
+
+    this.node = parentNode.find(`#${this.nodeId}`)
+
+    this.update()
+  }
+
+  update() {
+    const { cellsContentWidth, cellsContentHeight } = this.polymersheet.store
+    this.node.css({
+      width: `${cellsContentWidth}px`,
+      height: `${cellsContentHeight}px`
+    })
   }
 }
 

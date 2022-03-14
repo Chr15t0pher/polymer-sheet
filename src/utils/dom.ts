@@ -1,3 +1,4 @@
+import { isNullish } from './helpers'
 export class Dom<T extends HTMLElement = HTMLElement> {
   private el!: T
 
@@ -30,23 +31,23 @@ export class Dom<T extends HTMLElement = HTMLElement> {
 
   height() {
     if (this.isShow()) {
-      return parseFloat(this.getStyleValue('height'))
+      return this.el.getBoundingClientRect().height
     } else {
       this.css({ display: 'block !important', visibility: 'hidden' })
-      const elHeight = this.getStyleValue('height')
+      const elHeight = this.el.getBoundingClientRect().height
       this.css({ display: 'none', visibility: 'none' })
-      return parseFloat(elHeight)
+      return elHeight
     }
   }
 
   width() {
     if (this.isShow()) {
-      return parseFloat(this.getStyleValue('width'))
+      return this.el.getBoundingClientRect().width
     } else {
       this.css({ display: 'block !important', visibility: 'hidden' })
-      const elWidth = this.getStyleValue('width')
+      const elWidth = this.el.getBoundingClientRect().width
       this.css({ display: 'none', visibility: 'none' })
-      return parseFloat(elWidth)
+      return elWidth
     }
   }
 
@@ -104,7 +105,7 @@ export class Dom<T extends HTMLElement = HTMLElement> {
   }
 
   private getStyleValue<T extends keyof CSSStyleDeclaration>(attr: T) {
-    return getComputedStyle(this.el)[attr]
+    return window.getComputedStyle(this.el)[attr]
   }
 }
 

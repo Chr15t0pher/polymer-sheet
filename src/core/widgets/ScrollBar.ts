@@ -2,50 +2,81 @@ import { Widget } from './Widget'
 
 import type { Dom } from '../../utils/dom'
 
-enum ScrollBarClassName {
-  VERTICAL = 'polymersheet__scrollbar--vertical',
-  HORIZONTAL = 'polymersheet__scrollbar--horizontal'
-}
-
 export default class ScrollBar extends Widget {
-  private readonly viewSelector = '#polymersheet__view'
-  private readonly parentNodeSelector = '.polymersheet__view_grid'
+  private readonly verticalScrollBarClassName = 'polymersheet__scrollbar--vertical'
+  private readonly verticalScrollBarInnerClassName = 'polymersheet__scrollbar_inner--vertical'
+  private readonly horizontalScrollBarClassName = 'polymersheet__scrollbar--horizontal'
+  private readonly horizontalScrollBarInnerClassName = 'polymersheet__scrollbar_inner--horizontal'
 
-  private verticalScrollBarNode!: Dom<HTMLElement>
-  private horizontalScrollBarNode!: Dom<HTMLElement>
-
-  private get horizontalScrollBarWidth() {
-    const { scrollbarSize, cellsContentWidth } = this.polymersheet.store
-    return cellsContentWidth + scrollbarSize
-  }
+  private verticalScrollBarNode!: Dom
+  private verticalScrollBarInnerNode!: Dom
+  private horizontalScrollBarNode!: Dom
+  private horizontalScrollBarInnerNode!: Dom
 
   mount() {
-    const { rootNode } = this.polymersheet
+    const { viewNode, viewGridNodes } = this.polymersheet
+    const parentNode = viewGridNodes[3]
+
+    parentNode?.prepend(`
+			<div class="polymersheet__scrollbar ${this.verticalScrollBarClassName}">
+				<div class="${this.verticalScrollBarInnerClassName}"></div>
+			</div>
+			<div class="polymersheet__scrollbar ${this.horizontalScrollBarClassName}">
+				<div class="${this.horizontalScrollBarInnerClassName}"></div>
+			</div>
+			<div class="polymersheet__scrollbar_corner"></div>
+		`)
+
+    this.verticalScrollBarNode = parentNode.find(`.${this.verticalScrollBarClassName}`)
+    this.verticalScrollBarInnerNode = parentNode.find(`.${this.verticalScrollBarInnerClassName}`)
+    this.horizontalScrollBarNode = parentNode.find(`.${this.horizontalScrollBarClassName}`)
+    this.horizontalScrollBarInnerNode = parentNode.find(`.${this.horizontalScrollBarInnerClassName}`)
+
+    this.handleMouseWheel = this.handleMouseWheel.bind(this)
+    this.handleScroll = this.handleScroll.bind(this)
+
+    this.update()
+
+    // @ts-ignore
+    viewNode.elem().addEventListener('mousewheel', this.handleMouseWheel)
+    this.verticalScrollBarNode?.elem().addEventListener('scroll', this.handleScroll)
+    this.horizontalScrollBarNode?.elem().addEventListener('scroll', this.handleScroll)
+  }
+
+  update() {
     const {
       scrollbarSize,
       cellsContentHeight,
+      cellsContentWidth,
       worksheetActualHeight,
       worksheetActualWidth,
     } = this.polymersheet.store
-    const parentNode = rootNode.findAll(this.parentNodeSelector)[3]
 
-    parentNode?.prepend(`
-			<div class="polymersheet__scrollbar ${ScrollBarClassName.VERTICAL}" style="width: ${scrollbarSize}px; height: ${cellsContentHeight}px;">
-				<div style="height: ${worksheetActualHeight}px"></div>
-			</div>
-			<div class="polymersheet__scrollbar ${ScrollBarClassName.HORIZONTAL}" style="width: ${this.horizontalScrollBarWidth}px; height: ${scrollbarSize}px;">
-				<div style="width: ${worksheetActualWidth}px;"></div>
-			</div>
-		`)
+    this.verticalScrollBarNode.css({
+      width: `${scrollbarSize}px`,
+      height: `${cellsContentHeight}px`
+    })
 
-    const viewNode = rootNode.find(this.viewSelector)
-    this.verticalScrollBarNode = parentNode.find(`.${ScrollBarClassName.VERTICAL}`)
-    this.horizontalScrollBarNode = parentNode.find(`.${ScrollBarClassName.HORIZONTAL}`)
+    this.verticalScrollBarInnerNode.css({
+      height: `${worksheetActualHeight}px`
+    })
 
+    this.horizontalScrollBarNode.css({
+      width: `${cellsContentWidth}px`,
+      height: `${scrollbarSize}px`
+    })
+
+    this.horizontalScrollBarInnerNode.css({
+      width: `${worksheetActualWidth}px`
+    })
+
+  }
+
+  unmount() {
     // @ts-ignore
-    viewNode.elem().addEventListener('mousewheel', this.handleMouseWheel.bind(this))
-    this.verticalScrollBarNode?.elem().addEventListener('scroll', this.handleScroll.bind(this))
-    this.horizontalScrollBarNode?.elem().addEventListener('scroll', this.handleScroll.bind(this))
+    this.polymersheet.viewNode.elem().removeEventListener('mousewheel', this.handleMouseWheel)
+    this.verticalScrollBarNode?.elem().removeEventListener('scroll', this.handleScroll)
+    this.horizontalScrollBarNode?.elem().removeEventListener('scroll', this.handleScroll)
   }
 
   private handleMouseWheel(e: WheelEvent) {
@@ -57,6 +88,7 @@ export default class ScrollBar extends Widget {
     const horizontalScrollBarElm = horizontalScrollBarNode.elem()
     const verticalScrollBarElm = verticalScrollBarNode.elem()
 
+    // 因为 `scrollWidth` 和 `clientWidth` 都是四舍五入取整的，所以这种计算方式和真正的情况有些许误差
     const maxScrollLeft = horizontalScrollBarElm?.scrollWidth - horizontalScrollBarElm?.clientWidth
     const maxScrollTop = verticalScrollBarElm?.scrollHeight - verticalScrollBarElm?.clientHeight
     const newScrollLeft = Math.min(Math.max(e.deltaX + scrollLeft, 0), maxScrollLeft)

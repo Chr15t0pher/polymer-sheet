@@ -1,15 +1,40 @@
 import { Widget } from './Widget'
 
+import type { Dom } from '../../utils'
+
 export default class RowHeader extends Widget {
-  private readonly parentNodeSelector = '.polymersheet__view_grid'
+  private readonly rowClassName = 'polymersheet__header--row'
+  private readonly rowShimClassName = 'polymersheet__header_shim--row'
+
+  private rowNode!: Dom
+  private rowShimNode!: Dom
 
   mount() {
-    const { rowHeaderWidth, scrollbarSize, cellsContentHeight } = this.polymersheet.store
-    const parentNode = this.polymersheet.rootNode.findAll(this.parentNodeSelector)[2]
+    const parentNode = this.polymersheet.viewGridNodes[2]
 
     parentNode?.append(`
-			<div class="polymersheet__header--row" style="width: ${rowHeaderWidth}px; height: ${cellsContentHeight}px"></div>
-			<div class="polymersheet__header_shim--row" style="width: ${rowHeaderWidth}px; height: ${scrollbarSize}px"></div>
+			<div class="${this.rowClassName}"></div>
+			<div class="${this.rowShimClassName}"></div>
 		`)
+
+
+    this.rowNode = parentNode.find(`.${this.rowClassName}`)
+    this.rowShimNode = parentNode.find(`.${this.rowShimClassName}`)
+
+    this.update()
+  }
+
+  update() {
+    const { rowHeaderWidth, scrollbarSize, cellsContentHeight } = this.polymersheet.store
+
+    this.rowNode.css({
+      width: `${rowHeaderWidth}px`,
+      height: `${cellsContentHeight}px`
+    })
+
+    this.rowShimNode.css({
+      width: `${rowHeaderWidth}px`,
+      height: `${scrollbarSize}px`
+    })
   }
 }

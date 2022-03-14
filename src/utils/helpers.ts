@@ -13,7 +13,7 @@ export function isEnglish(str: string) {
 }
 
 export function isOdd(value: number) {
-  return value % 2 !== 0
+  return value % 2 === 1
 }
 
 export function getType(value: unknown) {
