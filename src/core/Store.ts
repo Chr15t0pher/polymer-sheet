@@ -2,31 +2,45 @@ import type { PolymerSheetOptions } from '../declare'
 
 export type OverflowMap = Map<number, Map<number, { row: number, intervalLeftCol: number, intervalRightCol: number }>>
 
+/**
+ * Store 中所涉及的宽高均为「内容 + 边框」的总宽高
+ */
 export interface Store extends PolymerSheetOptions {
 
-  /** 根节点宽高 */
+  /** 根节点宽度 */
   containerNodeWidth: number
+  /** 根节点高度 */
   containerNodeHeight: number
 
-  /** 画布宽高 */
+  /** 画布宽度 */
   contentWidth: number
+  /** 画布高度 */
   contentHeight: number
 
-  /** 表格单元格部分的宽高 */
+  /** 表格内容（单元格）部分的宽度 */
   cellsContentWidth: number
+  /** 表格内容（单元格）部分的高度 */
   cellsContentHeight: number
 
+  /** 画布右边距 */
+  contentPaddingRight: number
+  /** 画布底部边距 */
+  contentPaddingBottom: number
+
+  /** 设备像素比 */
   devicePixelRatio: number
 
-  /** 表格缩放*/
+  /** 表格缩放比例 */
   zoomRatio: number
 
-  /** 选中表格实际宽高 */
+  /** 当前表格的实际宽度 */
   worksheetActualWidth: number
+  /** 当前表格的实际高度 */
   worksheetActualHeight: number
 
-  /** 选中表格垂直和水平表格线的实际位置 */
+  /** 当前表格内容水平表格线的实际位置 */
   horizontalLinesPosition: number[]
+  /** 当前表格内容垂直表格线的实际位置 */
   verticalLinesPosition: number[]
 
   /** 文本换行溢出位置记录 */
@@ -38,7 +52,6 @@ export interface Store extends PolymerSheetOptions {
 
 export const PLACEHOLDER_WORKSHEET_ID = -1
 
-// store 中的宽高是内容 + border 的总宽高
 const store: Store = {
   containerId: 'polymer_sheet',
 
@@ -52,7 +65,6 @@ const store: Store = {
   columnHeaderHeight: 24,
 
   defaultRowHeight: 20,
-  // defaultRowHeight: 200,
   defaultColWidth: 100,
 
   bottomBarHeight: 42,
@@ -65,6 +77,9 @@ const store: Store = {
 
   cellsContentWidth: 0,
   cellsContentHeight: 0,
+
+  contentPaddingRight: 20,
+  contentPaddingBottom: 50,
 
   devicePixelRatio: window.devicePixelRatio,
 
@@ -81,6 +96,7 @@ const store: Store = {
   scrollbarSize: 12,
 
   styles: {
+    backgroundColor: '#f5f5f5',
     upperLeftCorner: {
       borderWidth: 1,
       borderColor: '#c0c0c0',

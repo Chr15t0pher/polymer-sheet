@@ -2,7 +2,7 @@ import { throttle } from 'throttle-debounce'
 
 import { Widget } from './Widget'
 
-export default class Accesibility extends Widget {
+export default class Accessibility extends Widget {
   private removeResizeEventListener!: () => void
   private resizeObserver!: ResizeObserver
 

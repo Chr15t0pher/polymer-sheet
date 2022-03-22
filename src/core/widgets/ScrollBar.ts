@@ -48,6 +48,8 @@ export default class ScrollBar extends Widget {
       scrollbarSize,
       cellsContentHeight,
       cellsContentWidth,
+      contentPaddingRight,
+      contentPaddingBottom,
       worksheetActualHeight,
       worksheetActualWidth,
     } = this.polymersheet.store
@@ -58,7 +60,7 @@ export default class ScrollBar extends Widget {
     })
 
     this.verticalScrollBarInnerNode.css({
-      height: `${worksheetActualHeight}px`
+      height: `${worksheetActualHeight + contentPaddingBottom}px`
     })
 
     this.horizontalScrollBarNode.css({
@@ -67,7 +69,7 @@ export default class ScrollBar extends Widget {
     })
 
     this.horizontalScrollBarInnerNode.css({
-      width: `${worksheetActualWidth}px`
+      width: `${worksheetActualWidth + contentPaddingRight}px`
     })
 
   }
@@ -83,22 +85,39 @@ export default class ScrollBar extends Widget {
     // disable swipe back/forward event
     e.preventDefault()
 
+    const { deltaX, deltaY } = e
     const { polymersheet, horizontalScrollBarNode, verticalScrollBarNode } = this
     const { scrollLeft = 0, scrollTop = 0 } = polymersheet.getWorksheet()
     const horizontalScrollBarElm = horizontalScrollBarNode.elem()
     const verticalScrollBarElm = verticalScrollBarNode.elem()
 
-    // 因为 `scrollWidth` 和 `clientWidth` 都是四舍五入取整的，所以这种计算方式和真正的情况有些许误差
-    const maxScrollLeft = horizontalScrollBarElm?.scrollWidth - horizontalScrollBarElm?.clientWidth
-    const maxScrollTop = verticalScrollBarElm?.scrollHeight - verticalScrollBarElm?.clientHeight
-    const newScrollLeft = Math.min(Math.max(e.deltaX + scrollLeft, 0), maxScrollLeft)
-    const newScrolTop = Math.min(Math.max(e.deltaY + scrollTop, 0), maxScrollTop)
+    let newScrollLeft = 0
+    let newScrollTop = 0
 
-    // TODO move this to action when observable is done
-    horizontalScrollBarElm?.scrollTo({ left: newScrollLeft })
-    verticalScrollBarElm?.scrollTo({ top: newScrolTop })
+    // if has reached the left boundary
+    if (scrollLeft <= 0 && deltaX <= 0) {
+      newScrollLeft = scrollLeft
+    } else {
+      // 因为 `scrollWidth` 和 `clientWidth` 都是四舍五入取整的，所以这种计算方式和真正的情况有些许误差
+      const maxScrollLeft = horizontalScrollBarElm?.scrollWidth - horizontalScrollBarElm?.clientWidth
+      newScrollLeft = Math.min(Math.max(deltaX + scrollLeft, 0), maxScrollLeft)
+      if (newScrollLeft !== scrollLeft) {
+        horizontalScrollBarElm?.scrollTo({ left: newScrollLeft })
+      }
+    }
 
-    this.setScrollPosition(newScrollLeft, newScrolTop)
+    // if has reached the top boundary
+    if (scrollTop <= 0 && deltaY <= 0) {
+      newScrollTop = scrollTop
+    } else {
+      const maxScrollTop = verticalScrollBarElm?.scrollHeight - verticalScrollBarElm?.clientHeight
+      newScrollTop = Math.min(Math.max(deltaY + scrollTop, 0), maxScrollTop)
+      if (newScrollTop !== scrollTop) {
+        verticalScrollBarElm?.scrollTo({ top: newScrollTop })
+      }
+    }
+
+    this.setScrollPosition(newScrollLeft, newScrollTop)
   }
 
   private handleScroll() {
@@ -110,9 +129,14 @@ export default class ScrollBar extends Widget {
 
   private setScrollPosition(left: number, top: number) {
     const worksheet = this.polymersheet.getWorksheet()
-    worksheet.scrollTop = top
-    worksheet.scrollLeft = left
-    // TODO move this to action when observable is done
-    this.polymersheet.update()
+    const { scrollTop, scrollLeft } = worksheet
+
+    if (scrollTop !== top || scrollLeft !== left) {
+      worksheet.scrollTop = top
+      worksheet.scrollLeft = left
+      // TODO move this to action when observable is done
+      this.polymersheet.update()
+    }
+
   }
 }

@@ -89,7 +89,7 @@ export interface Cell {
   w?: string
 
   /** data type */
-  t: DataType
+  t?: DataType
 
   /** cell style */
   s?: CellStyle
@@ -118,6 +118,7 @@ export interface Sheet {
 
   scrollLeft?: number
 }
+
 export interface StyleSet {
   borderWidth?: number,
   borderColor?: string,
@@ -158,6 +159,7 @@ export interface PolymerSheetOptions {
   bottomBarHeight: number
 
   styles: {
+    backgroundColor?: string,
     upperLeftCorner?: StyleSet,
     header?: StylesOfDifferentStatus,
     cell?: StylesOfDifferentStatus,

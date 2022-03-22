@@ -23,6 +23,7 @@ export function findCellPosition(positions: number[], anchor: number) {
       return -1
     }
   }
+
   return -1
 }
 

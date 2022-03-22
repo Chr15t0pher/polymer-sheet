@@ -6,7 +6,8 @@ import Content from './Content'
 import ScrollBar from './ScrollBar'
 import CellsOverlay from './CellsOverlay'
 import BottomBar from './BottomBar'
-import Accesibility from './Accessibility'
+import Accessibility from './Accessibility'
+import AddRows from './AddRows'
 
 const WIDGETS = [
   ToolBar,
@@ -17,7 +18,8 @@ const WIDGETS = [
   ScrollBar,
   CellsOverlay,
   BottomBar,
-  Accesibility
+  Accessibility,
+  AddRows
 ]
 
 export default WIDGETS

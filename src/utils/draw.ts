@@ -1,4 +1,4 @@
-import { getType, isOdd, isNullish } from './helpers'
+import { getType, isOdd } from './helpers'
 import { FontWeight, FontStyle } from '../declare'
 
 export interface DrawingStyles extends
@@ -27,14 +27,11 @@ const round = Math.round
 
 const DefaultFontFamily = 'Roboto,RobotoDraft,Helvetica,Arial,sans-serif'
 
-function defuzzyPixel(x: number, lineWidth: number) {
-  if (!lineWidth) {
-    return round(x)
-  }
-
+function defuzzyPixel(x: number, lineWidth: number, offset: number) {
   const doubledX = round(x * 2)
+
   return isOdd(doubledX + round(lineWidth))
-    ? (doubledX - 1) / 2
+    ? (doubledX + offset) / 2
     : doubledX / 2
 }
 
@@ -43,9 +40,10 @@ function defuzzyPixel(x: number, lineWidth: number) {
  */
 function defuzzy(point: Point, lineWidth: number, scale: number) {
   let { x, y } = point
+  const offset = scale < 1 ? -1 : 1
 
-  x = defuzzyPixel(x * scale, lineWidth)
-  y = defuzzyPixel(y * scale, lineWidth)
+  x = defuzzyPixel(x * scale, lineWidth, offset)
+  y = defuzzyPixel(y * scale, lineWidth, offset)
 
   return { x, y }
 }
@@ -73,11 +71,11 @@ export class Brush {
 
   size(width: number, height: number, dpr = 1) {
     this.scale = dpr
-    const canvasWidth = Math.floor(width * dpr)
-    const canvasHeight = Math.floor(height * dpr)
+    const canvasWidth = round(width * dpr)
+    const canvasHeight = round(height * dpr)
     this.canvas.width = canvasWidth
     this.canvas.height = canvasHeight
-    const styleWidth = canvasWidth / dpr
+    const styleWidth = width
     const styleHeight = styleWidth * canvasHeight / canvasWidth
     this.canvas.style.width = `${styleWidth}px`
     this.canvas.style.height = `${styleHeight}px`
@@ -113,7 +111,7 @@ export class Brush {
   }
 
   /**
-	 * 绘制多条线段,
+	 * 绘制多条线段
 	 * @param points
 	 * @param styles
 	 * @returns
@@ -125,12 +123,11 @@ export class Brush {
     // 移除无关属性
     delete filteredStyles.lineDash
 
-    const needFill = !isNullish(filteredStyles.fillStyle)
-    const needStroke = !isNullish(filteredStyles.strokeStyle)
-    let lineWidth = needFill && !needStroke ? 0 : (filteredStyles.lineWidth || 1)
-    // The fill operation will reduces the border width by half
-    lineWidth = Math.max(Math.floor(lineWidth * scale), 1)
-    filteredStyles.lineWidth = needFill ? lineWidth * 2 : lineWidth
+    const { lineWidth = 0 } = filteredStyles
+
+    if (lineWidth) {
+      filteredStyles.lineWidth = Math.max(Math.floor(lineWidth * scale), 1)
+    }
 
     this.save()
     this.ctx.beginPath()
@@ -155,8 +152,9 @@ export class Brush {
       this.ctx.closePath()
     }
 
+    // 一定要先填充再描边，否则边框会被吞掉一半
+    filteredStyles.fillStyle && this.ctx.fill()
     filteredStyles.strokeStyle && this.ctx.stroke()
-    needFill && this.ctx.fill()
 
     this.restore()
 
@@ -195,27 +193,30 @@ export class Brush {
 	 */
   cell(point1: Point, point2: Point, styles: DrawingStyles = {}) {
     const lineWidth = styles.lineWidth || 1
-    const backgroundStyles = {
-      ...styles,
-      strokeStyle: undefined
+
+    if (styles.fillStyle) {
+      const backgroundStyles = {
+        ...styles,
+        lineWidth: 0,
+        strokeStyle: undefined
+      }
+
+      this.rect(
+        point1,
+        point2,
+        backgroundStyles
+      )
     }
 
     const borderStyles = {
       ...styles,
       fillStyle: undefined
     }
-
-    this.rect(
-      { x: point1.x, y: point1.y },
-      { x: point2.x - lineWidth * 0.5, y: point2.y - lineWidth * 0.5 },
-      backgroundStyles
-    )
-
     this.polyline(
       [
-        { x: point2.x, y: point1.y },
+        { x: point2.x, y: point1.y - lineWidth * 0.5 },
         point2,
-        { x: point1.x, y: point2.y },
+        { x: point1.x - lineWidth * 0.5, y: point2.y },
       ],
       borderStyles
     )

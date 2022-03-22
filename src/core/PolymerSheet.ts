@@ -1,14 +1,17 @@
 import './index.styl'
 
+import { throttle } from 'throttle-debounce'
+
 import store from './Store'
 
 import Widgets from './widgets'
 
 import { mergeOptions, d, isNullish } from '../utils'
-import { PolymerSheetOptions, Sheet, SheetId } from '../declare'
+import { PolymerSheetOptions, SheetId } from '../declare'
 
 import type { Widget } from './widgets/Widget'
 import type { Dom } from '../utils'
+import type { Cell } from '../declare'
 
 export class PolymerSheet {
   private readonly rootNodeId = 'polymersheet'
@@ -38,6 +41,7 @@ export class PolymerSheet {
   }
 
   mount() {
+    this.update = throttle(50, this.update.bind(this))
     this.renderSkeleton()
     this.calcContainerNodeSize()
     this.widgets.forEach(w => w.mount())
@@ -49,10 +53,7 @@ export class PolymerSheet {
 
   setWorksheet(sheetId: SheetId) {
     this.store.worksheetId = sheetId
-    const worksheet = this.getWorksheet()
-    if (worksheet) {
-      this.calcWorksheetActualSize(worksheet)
-    }
+    this.calcWorksheetSize()
   }
 
   getWorksheet() {
@@ -83,14 +84,21 @@ export class PolymerSheet {
     this.viewGridNodes = this.containerNode.findAll(`.${this.viewGridClassName}`)
   }
 
-  private calcWorksheetActualSize(sheet: Sheet) {
+  calcWorksheetSize() {
+    const sheet = this.getWorksheet()
     const rowLen = sheet.cells.length
     const columnLen = sheet.cells[0].length
+
+    const horizontalLinesPosition: number[] = []
+    const verticalLinesPosition: number[] = []
+    let worksheetActualHeight = 0
+    let worksheetActualWidth = 0
+
     for (let i = 0; i < rowLen; i++) {
       let rowHeight = this.store.defaultRowHeight
 
       if (sheet.rowsHidden?.includes(i)) {
-        this.store.horizontalLinesPosition.push(this.store.worksheetActualHeight)
+        horizontalLinesPosition.push(worksheetActualHeight)
         continue
       }
 
@@ -98,15 +106,15 @@ export class PolymerSheet {
         rowHeight = sheet.rowsHeightMap[i]
       }
 
-      this.store.worksheetActualHeight += rowHeight
-      this.store.horizontalLinesPosition.push(this.store.worksheetActualHeight)
+      worksheetActualHeight += rowHeight
+      horizontalLinesPosition.push(worksheetActualHeight)
     }
 
     for (let i = 0; i < columnLen; i++) {
       let columnWidth = this.store.defaultColWidth
 
       if (sheet.colsHidden && sheet.colsHidden.includes(i)) {
-        this.store.verticalLinesPosition.push(this.store.worksheetActualWidth)
+        verticalLinesPosition.push(worksheetActualWidth)
         continue
       }
 
@@ -114,9 +122,14 @@ export class PolymerSheet {
         columnWidth = sheet.colsWidthMap[i]
       }
 
-      this.store.worksheetActualWidth += columnWidth
-      this.store.verticalLinesPosition.push(this.store.worksheetActualWidth)
+      worksheetActualWidth += columnWidth
+      verticalLinesPosition.push(worksheetActualWidth)
     }
+
+    this.store.horizontalLinesPosition = horizontalLinesPosition
+    this.store.verticalLinesPosition = verticalLinesPosition
+    this.store.worksheetActualHeight = worksheetActualHeight
+    this.store.worksheetActualWidth = worksheetActualWidth
   }
 
   calcContainerNodeSize() {
@@ -134,5 +147,22 @@ export class PolymerSheet {
     this.store.contentHeight = this.store.containerNodeHeight - scrollbarSize - toolbarHeight - bottomBarHeight
     this.store.cellsContentWidth = this.store.contentWidth - rowHeaderWidth
     this.store.cellsContentHeight = this.store.contentHeight - columnHeaderHeight
+  }
+
+  /**
+	 * 插入行
+	 * @param start 要添加的首行的行号，从 0 开始
+	 * @param len 行数
+	 */
+  insertRows(start: number, len = 1) {
+    const worksheet = this.getWorksheet()
+    const columnLen = worksheet.cells[0].length
+    const newCells = Array.from({ length: len }).map(() => {
+      return Array.from({ length: columnLen }).map(() => ({} as Cell))
+    })
+
+    worksheet.cells.splice(start, 0, ...newCells)
+    this.calcWorksheetSize()
+    this.update()
   }
 }

@@ -1,4 +1,3 @@
-import { isNullish } from './helpers'
 export class Dom<T extends HTMLElement = HTMLElement> {
   private el!: T
 
