@@ -109,7 +109,7 @@ export default class Content extends Widget {
     // 绘制背景，不能在循环中和边框交叉绘制，否则在低设备像素比(如 0.67、 0.33)时会出现某些线条被吞并的情况
       .rect(
         { x: 0, y: 0 },
-        { x: rowHeaderWidth, y: horizontalLinesPosition[endRow] },
+        { x: rowHeaderWidth, y: horizontalLinesPosition[endRow] - scrollTop },
         {
           fillStyle: headerStyles.default?.backgroundColor
         }
@@ -161,7 +161,7 @@ export default class Content extends Widget {
     // 绘制背景，不能在循环中和边框交叉绘制，否则在低设备像素比(如 0.67、 0.33)时会出现某些线条被吞并的情况
       .rect(
         { x: 0, y: 0 },
-        { x: verticalLinesPosition[endCol], y: columnHeaderHeight },
+        { x: verticalLinesPosition[endCol] - scrollLeft, y: columnHeaderHeight },
         {
           fillStyle: headerStyles.default?.backgroundColor
         }
@@ -380,7 +380,7 @@ export default class Content extends Widget {
     // 绘制背景，不能在循环中和边框交叉绘制，否则在低设备像素比(如 0.67、 0.33)时会出现某些线条被吞并的情况
       .rect(
         { x: 0, y: 0 },
-        { x: verticalLinesPosition[endCol], y: horizontalLinesPosition[endRow] },
+        { x: verticalLinesPosition[endCol] - scrollLeft, y: horizontalLinesPosition[endRow] - scrollTop },
         {
           fillStyle: cellStyles?.default?.backgroundColor
         }

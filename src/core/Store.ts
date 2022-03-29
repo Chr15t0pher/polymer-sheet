@@ -98,7 +98,7 @@ const store: Store = {
   styles: {
     backgroundColor: '#f5f5f5',
     upperLeftCorner: {
-      borderWidth: 1,
+      borderWidth: 5,
       borderColor: '#c0c0c0',
       backgroundColor: '#ffffff'
     },
