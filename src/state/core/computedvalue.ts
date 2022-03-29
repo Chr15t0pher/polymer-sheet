@@ -33,8 +33,6 @@ export class ComputedValue<T = any> extends BaseObservable implements IDerivatio
 
   depsUnboundCount = 0
 
-  name!: string
-
   isComputing = false
 
   derivation!: () => T
@@ -71,6 +69,7 @@ export class ComputedValue<T = any> extends BaseObservable implements IDerivatio
       if (this.trackAndCompute()) reportChanged(this)
       endBatch()
     }
+    return this.value
   }
 
   set(newValue: any) {

@@ -5,9 +5,10 @@ import { Brush } from '../../utils'
 import { TextWrap, TextAlign } from '../../declare'
 
 import type { Sheet } from '../../declare'
-import type { OverflowMap } from '../Store'
+import { OverflowMap } from '../Store'
 import type { TextInfo } from './../../utils/text'
 import type { DrawingStyles } from '../../utils/draw'
+import { observer } from '../observer'
 
 interface CellPositionInfo {
   /** rowIndex */
@@ -24,6 +25,7 @@ interface CellPositionInfo {
   ey: number,
 }
 
+@observer
 export default class Content extends Widget {
   private readonly nodeId = 'polymersheet__content'
 
@@ -38,21 +40,22 @@ export default class Content extends Widget {
 
     this.brush = new Brush(`#${this.nodeId}`)
 
-    this.update()
+    this.render()
   }
 
-  update() {
-    const { contentWidth, contentHeight, devicePixelRatio } = this.polymersheet.store
-    const worksheet = this.polymersheet.getWorksheet()
+  render() {
+    const { contentWidth, contentHeight, devicePixelRatio, worksheet } = this.polymersheet.store
 
     this.brush
       .clearAll()
       .size(contentWidth, contentHeight, devicePixelRatio)
 
-    this.drawContent(worksheet)
-    this.drawRowHeader(worksheet)
-    this.drawColumnHeader(worksheet)
-    this.drawUpperLeftCorner()
+    if (worksheet) {
+      this.drawContent()
+      this.drawRowHeader(worksheet)
+      this.drawColumnHeader(worksheet)
+      this.drawUpperLeftCorner()
+    }
   }
 
   drawUpperLeftCorner() {
@@ -101,8 +104,8 @@ export default class Content extends Widget {
         continue
       }
 
-      const preCurrentRowEndAxisY = i === 0 ? -offsetTop : horizontalLinesPosition[i - 1] - offsetTop
-      const currentRowEndAxisY = horizontalLinesPosition[i] - offsetTop
+      const preCurrentRowEndAxisY = i === 0 ? -scrollTop : horizontalLinesPosition[i - 1] - scrollTop
+      const currentRowEndAxisY = horizontalLinesPosition[i] - scrollTop
 
       this.brush
         .cell(
@@ -162,7 +165,7 @@ export default class Content extends Widget {
         continue
       }
 
-      const preCurrentColEndAxisX = i === 0 ? -offsetLeft : verticalLinesPosition[i - 1] - offsetLeft
+      const preCurrentColEndAxisX = i === 0 ? -scrollLeft : verticalLinesPosition[i - 1] - scrollLeft
       const currentColEndAxisX = verticalLinesPosition[i] - scrollLeft
       const columnNum = transNumToColumnIdx(i)
 
@@ -195,12 +198,13 @@ export default class Content extends Widget {
     this.brush.restore()
   }
 
-  drawContent(worksheet: Sheet) {
+  drawContent() {
     const {
       contentWidth,
       contentHeight,
       verticalLinesPosition,
       horizontalLinesPosition,
+      worksheet
     } = this.polymersheet.store
     const { scrollTop = 0, scrollLeft = 0 } = worksheet
 

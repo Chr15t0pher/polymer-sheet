@@ -13,6 +13,8 @@ import { ObservableValue } from './observablevalue'
 import { addHiddenProp, hasProp } from '../utils'
 
 export function isObservable(v: any) {
+  if (v === undefined || v === null) return false
+
   return(
     isObservableObject(v) ||
     isReaction(v) ||
@@ -82,7 +84,7 @@ export function createPropDecorator<T>(propCreator: PropertyCreator) {
       descriptor: TypedPropertyDescriptor<T>
     ) {
       if (!hasProp(target, pendingDecoratorSymbol)) {
-        addHiddenProp(target, pendingDecoratorSymbol, {...target.pendingDecorator})
+        addHiddenProp(target, pendingDecoratorSymbol, {...target[pendingDecoratorSymbol]})
       }
       target[pendingDecoratorSymbol][prop] = {
         decoratorTarget: target,
@@ -142,7 +144,7 @@ export function getDefaultDecoratorFromOptions(options: CreateObservableOptions)
 export const observableFactories = {
   box<T>(value: T, options?: CreateObservableOptions) {
     const o = asCreateObservableOptions(options)
-    return new ObservableValue(value, getEnhancerFromOptions(o), o.name, o.equals)
+    return new ObservableValue(value, o.name, getEnhancerFromOptions(o), o.equals)
   },
   array<T>(target: T[], options?: CreateObservableOptions) {
     const o = asCreateObservableOptions(options)

@@ -17,9 +17,12 @@ function referenceComparer(a: any, b: any) {
 function defaultComparer(a: any, b: any) {
   if (Object.is) Object.is(a, b)
 
-  return a === b
-    ? (a !== 0 || 1 / a === 1 / b)
-    : (a !== a && b !== b)
+  // SameValue algorithm
+  if (a === b) {
+    return a !== 0 || 1 / a === 1 / b
+  } else {
+    return a !== a && b !== b
+  }
 }
 
 function deepEqual(a: any, b: any) {

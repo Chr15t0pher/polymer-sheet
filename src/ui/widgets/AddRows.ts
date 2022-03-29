@@ -2,13 +2,22 @@ import { Widget } from './Widget'
 import { KeyCode } from '../../declare'
 
 import type { Dom } from '../../utils'
+import type { PolymerSheet } from '../PolymerSheet'
+import { observer } from '../observer'
 
+@observer
 export default class AddRows extends Widget {
   private readonly nodeClassName = 'polymersheet__add_rows_container'
 
   private node!: Dom
   private addBtn!: Dom
   private rowsInput!: Dom<HTMLInputElement>
+
+  constructor(protected polymersheet: PolymerSheet) {
+    super(polymersheet)
+    this.handleAddRows = this.handleAddRows.bind(this)
+    this.handleKeydown = this.handleKeydown.bind(this)
+  }
 
   mount() {
     const parentNode = this.polymersheet.viewGridNodes[3]
@@ -20,8 +29,6 @@ export default class AddRows extends Widget {
 			</div>
 		`)
 
-    this.handleAddRows = this.handleAddRows.bind(this)
-    this.handleKeydown = this.handleKeydown.bind(this)
     this.node = parentNode.find(`.${this.nodeClassName}`)
     this.addBtn = this.node.find('button')
     this.rowsInput = this.node.find('input') as Dom<HTMLInputElement>
@@ -30,9 +37,8 @@ export default class AddRows extends Widget {
     this.rowsInput.elem().addEventListener('keydown', this.handleKeydown)
   }
 
-  update() {
-    const { worksheetActualHeight } = this.polymersheet.store
-    const { scrollTop = 0 } = this.polymersheet.getWorksheet()
+  render() {
+    const { worksheetActualHeight, worksheet: { scrollTop = 0 } } = this.polymersheet.store
     const top = worksheetActualHeight - scrollTop + 10
 
     this.node.css({
@@ -52,8 +58,7 @@ export default class AddRows extends Widget {
   }
 
   handleAddRows() {
-    const worksheet = this.polymersheet.getWorksheet()
-    const rowLen = worksheet.cells.length
+    const rowLen = this.polymersheet.store.worksheet.cells.length
     const value = Math.floor(Number(this.rowsInput.elem().value))
     this.polymersheet.insertRows(rowLen, value)
   }

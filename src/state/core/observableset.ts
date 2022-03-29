@@ -124,5 +124,5 @@ export const isObservableSet = wrapInstanceWithPredicate(
 
 export function createObservableSet<T>(set: Set<T>, options?: CreateObservableOptions) {
   const o = asCreateObservableOptions(options)
-  return new ObservableValue(set, getEnhancerFromOptions(o), o.name, o.equals)
+  return new ObservableValue(set, o.name, getEnhancerFromOptions(o), o.equals)
 }

@@ -14,8 +14,8 @@ export class ObservableValue<T = any> extends BaseObservable {
 
   constructor(
     value: T,
+    name: string = 'ObservableValue@' + getNextId(),
     public enhancer: IEnhancer<any>,
-    public name: string = 'ObservableValue@' + getNextId(),
     private equals: IEqualComparer<any> = comparer.default
   ) {
     super(name)

@@ -28,9 +28,9 @@ function executeAction(actionName: string, fn: () => void, scope?: Record<Proper
   } finally {
     if (executeActionError) {
       globalState.executeActionError = executeActionError
-      endAction(actionInfo)
       globalState.executeActionError = false
     }
+    endAction(actionInfo)
   }
 }
 

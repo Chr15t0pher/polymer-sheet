@@ -15,7 +15,7 @@ class GlobalState {
 
   allowStateChanged = false
 
-  UNCHANGED = {}
+  UNCHANGED = { value: 'UNCHANGED' }
 
   computationDepth = 0
 }

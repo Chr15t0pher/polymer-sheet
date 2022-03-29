@@ -108,7 +108,7 @@ const handlers = {
     const adm: ObservableArrayAdministration = target[$obs]
     if (propName === $obs) return adm
     if (propName === 'length') return adm.getArrayLength()
-    if (typeof propName === 'string' || !isNaN(propName)) {
+    if (typeof propName === 'string' && !isNaN(propName as any)) {
       return adm.get(parseInt(propName))
     }
 

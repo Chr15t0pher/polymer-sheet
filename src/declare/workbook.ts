@@ -131,8 +131,8 @@ export interface StyleSet {
 /**
  * 不同状态下的样式
  * `default`: 默认样式
- * `highlight`: 选中多个单元格或选中单元格时所在表头高亮的样式
- * `focus`: 选中表头或选中单个单元格的样式
+ * `highlight`: 高亮样式
+ * `focus`: 选中时，表头和单元格的样式，选中表头时，所在行或列单元格高亮；选中单个单元格时，所在行和列表头高亮
  */
 export interface StylesOfDifferentStatus {
   default?: StyleSet,

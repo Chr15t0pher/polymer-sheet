@@ -1,7 +1,9 @@
 import { Widget } from './Widget'
 
 import type { Dom } from '../../utils'
+import { observer } from '../observer'
 
+@observer
 export default class CellsOverlay extends Widget {
   private readonly nodeId = 'polymersheet__cells_overlay'
   private node!: Dom
@@ -16,10 +18,10 @@ export default class CellsOverlay extends Widget {
 
     this.node = parentNode.find(`#${this.nodeId}`)
 
-    this.update()
+    this.render()
   }
 
-  update() {
+  render() {
     const { cellsContentWidth, cellsContentHeight } = this.polymersheet.store
     this.node.css({
       width: `${cellsContentWidth}px`,

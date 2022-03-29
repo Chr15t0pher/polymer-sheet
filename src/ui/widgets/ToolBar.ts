@@ -1,5 +1,7 @@
+import { observer } from '../observer'
 import { Widget } from './Widget'
 
+@observer
 export default class ToolBar extends Widget {
   mount() {
     const parentNode = this.polymersheet.containerNode

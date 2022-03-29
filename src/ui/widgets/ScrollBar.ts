@@ -1,7 +1,10 @@
 import { Widget } from './Widget'
 
 import type { Dom } from '../../utils/dom'
+import type { PolymerSheet } from '../PolymerSheet'
+import { observer } from '../observer'
 
+@observer
 export default class ScrollBar extends Widget {
   private readonly verticalScrollBarClassName = 'polymersheet__scrollbar--vertical'
   private readonly verticalScrollBarInnerClassName = 'polymersheet__scrollbar_inner--vertical'
@@ -13,7 +16,14 @@ export default class ScrollBar extends Widget {
   private horizontalScrollBarNode!: Dom
   private horizontalScrollBarInnerNode!: Dom
 
+  constructor(protected polymersheet: PolymerSheet) {
+    super(polymersheet)
+    this.handleMouseWheel = this.handleMouseWheel.bind(this)
+    this.handleScroll = this.handleScroll.bind(this)
+  }
+
   mount() {
+    console.info('rerender')
     const { viewNode, viewGridNodes } = this.polymersheet
     const parentNode = viewGridNodes[3]
 
@@ -32,10 +42,8 @@ export default class ScrollBar extends Widget {
     this.horizontalScrollBarNode = parentNode.find(`.${this.horizontalScrollBarClassName}`)
     this.horizontalScrollBarInnerNode = parentNode.find(`.${this.horizontalScrollBarInnerClassName}`)
 
-    this.handleMouseWheel = this.handleMouseWheel.bind(this)
-    this.handleScroll = this.handleScroll.bind(this)
 
-    this.update()
+    this.render()
 
     // @ts-ignore
     viewNode.elem().addEventListener('mousewheel', this.handleMouseWheel)
@@ -43,7 +51,7 @@ export default class ScrollBar extends Widget {
     this.horizontalScrollBarNode?.elem().addEventListener('scroll', this.handleScroll)
   }
 
-  update() {
+  render() {
     const {
       scrollbarSize,
       cellsContentHeight,
@@ -87,7 +95,7 @@ export default class ScrollBar extends Widget {
 
     const { deltaX, deltaY } = e
     const { polymersheet, horizontalScrollBarNode, verticalScrollBarNode } = this
-    const { scrollLeft = 0, scrollTop = 0 } = polymersheet.getWorksheet()
+    const { scrollLeft = 0, scrollTop = 0 } = polymersheet.store.worksheet
     const horizontalScrollBarElm = horizontalScrollBarNode.elem()
     const verticalScrollBarElm = verticalScrollBarNode.elem()
 
@@ -128,14 +136,13 @@ export default class ScrollBar extends Widget {
   }
 
   private setScrollPosition(left: number, top: number) {
-    const worksheet = this.polymersheet.getWorksheet()
+    const worksheet = this.polymersheet.store.worksheet
     const { scrollTop, scrollLeft } = worksheet
 
     if (scrollTop !== top || scrollLeft !== left) {
       worksheet.scrollTop = top
       worksheet.scrollLeft = left
-      // TODO move this to action when observable is done
-      this.polymersheet.update()
+      this.polymersheet.render()
     }
 
   }

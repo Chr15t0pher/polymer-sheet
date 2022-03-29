@@ -3,7 +3,7 @@ import type { IComputedOptions } from '../core'
 import { ComputedValue, computedDecorator } from '../core'
 import { isStringish } from '../utils'
 
-export function computed(arg1: any, arg2?: any) {
+export function computed(arg1: any, arg2?: any): any {
   if (isStringish(arg2)) {
     // @computed
     return computedDecorator.call(null, ...arguments as any)

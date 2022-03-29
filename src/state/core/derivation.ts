@@ -1,5 +1,7 @@
 import type { BaseObservable } from './baseobservable'
 
+import { globalState } from './globalstate'
+
 export interface IDerivation {
   newObserving: BaseObservable[]
   observing: BaseObservable[]
@@ -8,10 +10,12 @@ export interface IDerivation {
 }
 
 export function trackDerivedFunction<T>(derivation: IDerivation, f: () => T, ctx: any) {
+  derivation.depsUnboundCount = 0
+  const prevTracking = globalState.trackingDerivation
+  globalState.trackingDerivation = derivation
   const res = f.call(ctx)
-
+  globalState.trackingDerivation = prevTracking
   bindDependencies(derivation)
-
   return res
 }
 
@@ -20,15 +24,18 @@ function bindDependencies(derivation: IDerivation) {
   const observing = derivation.observing = derivation.newObserving
 
   let i0 = 0
-  let l = observing.length
+  let l = derivation.depsUnboundCount
   for(let i = 0; i < l; i++) {
-    let dep = observing[i]
+    const dep = observing[i]
     if (dep.diffValue === 0) {
       dep.diffValue = 1
-      if (i0 !== i) dep = observing[i0]
+      if (i0 !== i) {
+        observing[i0] = dep
+      }
       i0++
     }
   }
+
   observing.length = i0
 
   derivation.newObserving = []

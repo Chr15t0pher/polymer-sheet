@@ -62,8 +62,8 @@ export class ObservableMap<K, V> implements Map<K, V> {
     if (!entry) {
       entry = new ObservableValue(
         this.has_(key),
+        this.name + '.' + new String(key).toString(),
         this.enhancer,
-        this.name + '.' + new String(key).toString()
       )
       this.hasMap_.set(key, entry)
     }
@@ -85,7 +85,7 @@ export class ObservableMap<K, V> implements Map<K, V> {
     } else {
       // add new value
       transaction(() => {
-        const value = new ObservableValue(newValue, this.enhancer, this.name + new String(key).toString())
+        const value = new ObservableValue(newValue, this.name + new String(key).toString(), this.enhancer,)
         this.values_.set(key, value)
         this.updateHasMapEntry(key, true)
         this.keysAtom.reportChanged()

@@ -1,6 +1,7 @@
 import type { IComputedOptions } from './computedvalue'
 import type { IEnhancer } from './modifiers'
 import type { IPlainObject } from '../utils'
+import type { CreateObservableOptions } from '../core'
 import {
   referenceEnhancer,
   deepEnhancer,
@@ -14,9 +15,8 @@ import {
   getDescriptors,
   ownKeys,
 } from '../utils'
-import { getNextId, startBatch, endBatch } from './globalstate'
+import { getNextId, startBatch, endBatch, globalState } from './globalstate'
 import {
-  CreateObservableOptions,
   didRunLazyInitializerSymbol,
   getEnhancerFromOptions
 } from './observable'
@@ -62,7 +62,9 @@ export class ObservableObjectAdministration {
       return
     }
     const val = observable?.prepareNewValue(newValue)
-    observable?.setNewValue(val)
+    if (val !== globalState.UNCHANGED) {
+      observable?.setNewValue(val)
+    }
   }
 
   has_(propName: PropertyKey) {
@@ -73,8 +75,8 @@ export class ObservableObjectAdministration {
       const exist = !!this.values.get(propName)
       entry = new ObservableValue(
         exist,
+        `${this.name}.${propName.toString()}`,
         referenceEnhancer,
-        `${this.name}.${propName.toString()}`
       )
       map.set(propName, entry)
       return entry.get()
@@ -109,8 +111,8 @@ export class ObservableObjectAdministration {
 
     const observable = new ObservableValue(
       newValue,
+      `${this.name}.${String(propName)}`,
       enhancer,
-      `${this.name}.${String(propName)}`
     )
 
     this.values.set(propName, observable)
@@ -121,10 +123,10 @@ export class ObservableObjectAdministration {
   }
 
   addComputedProperty<T>(instance: any, propName: PropertyKey, options: IComputedOptions<T>) {
-    const name = options.name || `${this.name}.${String(propName)}`
+    options.name = options.name || `${this.name}.${String(propName)}`
     this.values.set(propName, new ComputedValue(options))
     if (instance === this.target) {
-      Object.defineProperty(instance, name, generateObservablePropertyDescriptor(propName))
+      Object.defineProperty(instance, propName, generateObservablePropertyDescriptor(propName))
     }
   }
 

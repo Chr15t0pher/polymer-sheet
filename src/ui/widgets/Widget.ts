@@ -4,10 +4,10 @@ export class Widget {
   constructor(protected polymersheet: PolymerSheet) {}
 
   mount() {
-    // do mount
+    // do render
   }
 
-  update() {
+  render() {
     // do update
   }
 

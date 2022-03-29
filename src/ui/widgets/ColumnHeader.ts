@@ -1,7 +1,9 @@
 import { Widget } from './Widget'
 
 import type { Dom } from '../../utils'
+import { observer } from '../observer'
 
+@observer
 export default class ColumnHeader extends Widget {
   private readonly columnClassName = 'polymersheet__header--col'
   private readonly columnShimClassName = 'polymersheet__header_shim--col'
@@ -20,10 +22,10 @@ export default class ColumnHeader extends Widget {
     this.columnNode = parentNode.find(`.${this.columnClassName}`)
     this.columnShimNode = parentNode.find(`.${this.columnShimClassName}`)
 
-    this.update()
+    this.render()
   }
 
-  update() {
+  render() {
     const { cellsContentWidth, columnHeaderHeight, scrollbarSize } = this.polymersheet.store
 
     this.columnNode.css({

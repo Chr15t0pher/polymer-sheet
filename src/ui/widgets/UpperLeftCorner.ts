@@ -1,5 +1,7 @@
+import { observer } from '../observer'
 import { Widget } from './Widget'
 
+@observer
 export default class UpperLeftCorner extends Widget {
 
   mount() {

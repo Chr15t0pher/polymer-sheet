@@ -7,7 +7,7 @@
   <title>Polymer</title>
 </head>
 <body onload="onload();">
-  <div id="polymer__container" style="width: 100vw; height: 100vh;"></div>
+  <div id="update" style="width: 100vw; height: 100vh;"></div>
   <script>
     var sheets = [{
       id: '0',
@@ -1377,7 +1377,7 @@ longerrrr line in stylus c`,
     }]
     var onload = function() {
       const sheet = new PolymerSheet({
-        containerId: '#polymer__container',
+        containerId: '#update',
         sheets,
         worksheetId: '0'
       })

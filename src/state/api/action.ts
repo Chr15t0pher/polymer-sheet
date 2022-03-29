@@ -1,6 +1,6 @@
 import { createAction } from '../core'
 
-export function action(arg1?: any, arg2?: any, arg3?: any) {
+export function action(arg1?: any, arg2?: any, arg3?: any): any {
   // action(fn)
   if (arguments.length === 1 && typeof arg1 === 'function') {
     return createAction(arg1.name || 'unnamed action', arg1)

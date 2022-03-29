@@ -1,4 +1,6 @@
-import type { PolymerSheetOptions } from '../declare'
+import { action, computed, observable } from '../state'
+import type { PolymerSheetOptions, Sheet, SheetId } from '../declare'
+import { isNullish } from '../utils'
 
 export type OverflowMap = Map<number, Map<number, { row: number, intervalLeftCol: number, intervalRightCol: number }>>
 
@@ -88,12 +90,28 @@ const store: Store = {
   worksheetActualWidth: 0,
   worksheetActualHeight: 0,
 
-  horizontalLinesPosition: [],
-  verticalLinesPosition: [],
-
   overflowMap: new Map(),
 
   scrollbarSize: 12,
+}
+
+export const defaultPolymerSheetOptions: PolymerSheetOptions = {
+  containerId: 'polymer_sheet',
+
+  sheets: [],
+
+  /** default current worksheet id */
+  worksheetId: PLACEHOLDER_WORKSHEET_ID,
+
+  toolbarHeight: 42,
+
+  rowHeaderWidth:  46,
+  columnHeaderHeight: 24,
+
+  defaultRowHeight: 20,
+  defaultColWidth: 100,
+
+  bottomBarHeight: 42,
 
   styles: {
     backgroundColor: '#f5f5f5',
@@ -141,4 +159,171 @@ const store: Store = {
   }
 }
 
+export class PolymerSheetStore {
+  containerId: string
+
+  /** 根节点宽度 */
+  @observable
+  containerNodeWidth = 0
+
+  /** 根节点高度 */
+  @observable
+  containerNodeHeight = 0
+
+  @observable
+  worksheetId: SheetId
+
+  @observable
+  sheets: Sheet[]
+
+  toolbarHeight: number
+
+  rowHeaderWidth: number
+
+  columnHeaderHeight: number
+
+  defaultColWidth: number
+
+  defaultRowHeight: number
+
+  bottomBarHeight: number
+
+  @observable
+  horizontalLinesPosition: number[] = []
+
+  @observable
+  verticalLinesPosition: number[] = []
+
+  @observable
+  worksheetActualWidth = 0
+
+  @observable
+  worksheetActualHeight = 0
+
+  @observable
+  devicePixelRatio = window.devicePixelRatio
+
+  scrollbarSize = 12
+
+  overflowMap = new Map()
+
+  styles: PolymerSheetOptions['styles']
+
+  contentPaddingRight = 20
+  contentPaddingBottom = 50
+
+  constructor(options: PolymerSheetOptions) {
+    const {
+      containerId,
+      sheets,
+      worksheetId,
+      toolbarHeight,
+      rowHeaderWidth,
+      columnHeaderHeight,
+      defaultColWidth,
+      defaultRowHeight,
+      bottomBarHeight,
+      styles
+    } = options
+    this.containerId = containerId
+    this.sheets = sheets
+    this.worksheetId = worksheetId
+    this.toolbarHeight = toolbarHeight
+    this.rowHeaderWidth = rowHeaderWidth
+    this.columnHeaderHeight = columnHeaderHeight
+    this.defaultColWidth = defaultColWidth
+    this.defaultRowHeight = defaultRowHeight
+    this.bottomBarHeight = bottomBarHeight
+    this.styles = styles
+
+    if (this.sheets.length > 0) {
+      const defaultWorksheetId = this.sheets.some((sheet) => sheet.id === this.worksheetId)
+        ? this.worksheetId
+        : sheets[0].id
+      this.setWorksheet(defaultWorksheetId)
+    }
+  }
+
+  @computed
+  get contentWidth() {
+    return this.containerNodeWidth - this.scrollbarSize
+  }
+
+  @computed
+  get contentHeight() {
+    return this.containerNodeHeight - this.scrollbarSize - this.toolbarHeight - this.bottomBarHeight
+  }
+
+  @computed
+  get cellsContentWidth() {
+    return this.contentWidth - this.rowHeaderWidth
+  }
+
+  @computed
+  get cellsContentHeight() {
+    return this.contentHeight - this.columnHeaderHeight
+  }
+
+  @computed
+  get worksheet() {
+    return this.sheets.filter(sheet => sheet.id === this.worksheetId)[0] || this.sheets[0]
+  }
+
+  @action
+  setWorksheet(sheetId: SheetId) {
+    this.worksheetId = sheetId
+    if (this.worksheet) {
+      this.calcWorksheetSize()
+    }
+  }
+
+  @action
+  calcWorksheetSize() {
+    const { worksheet } = this
+    const rowLen = worksheet.cells.length
+    const columnLen = worksheet.cells[0].length
+
+    const horizontalLinesPosition: number[] = []
+    const verticalLinesPosition: number[] = []
+    let worksheetActualHeight = 0
+    let worksheetActualWidth = 0
+
+    for (let i = 0; i < rowLen; i++) {
+      let rowHeight = this.defaultRowHeight
+
+      if (worksheet.rowsHidden?.includes(i)) {
+        horizontalLinesPosition.push(worksheetActualHeight)
+        continue
+      }
+
+      if (worksheet.rowsHeightMap && !isNullish(worksheet.rowsHeightMap[i])) {
+        rowHeight = worksheet.rowsHeightMap[i]
+      }
+
+      worksheetActualHeight += rowHeight
+      horizontalLinesPosition.push(worksheetActualHeight)
+    }
+
+    for (let i = 0; i < columnLen; i++) {
+      let columnWidth = this.defaultColWidth
+
+      if (worksheet.colsHidden && worksheet.colsHidden.includes(i)) {
+        verticalLinesPosition.push(worksheetActualWidth)
+        continue
+      }
+
+      if (worksheet.colsWidthMap && !isNullish(worksheet.colsWidthMap[i])) {
+        columnWidth = worksheet.colsWidthMap[i]
+      }
+
+      worksheetActualWidth += columnWidth
+      verticalLinesPosition.push(worksheetActualWidth)
+    }
+
+    this.horizontalLinesPosition = horizontalLinesPosition
+    this.verticalLinesPosition = verticalLinesPosition
+    this.worksheetActualHeight = worksheetActualHeight
+    this.worksheetActualWidth = worksheetActualWidth
+  }
+}
 export default store
