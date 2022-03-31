@@ -69,8 +69,7 @@ export class PolymerSheet {
   }
 
   calcContainerNodeSize() {
-    this.store.containerNodeWidth = this.containerNode.width()
-    this.store.containerNodeHeight = this.containerNode.height()
+    this.store.calcContainerNodeSize(this.containerNode.width(), this.containerNode.height())
   }
 
   /**
@@ -81,12 +80,10 @@ export class PolymerSheet {
   insertRows(start: number, len = 1) {
     const worksheet = this.store.worksheet
     const columnLen = worksheet.cells[0].length
-    const newCells = Array.from({ length: len }).map(() => {
+    const newRows = Array.from({ length: len }).map(() => {
       return Array.from({ length: columnLen }).map(() => ({} as Cell))
     })
-
-    worksheet.cells.splice(start, 0, ...newCells)
+    this.store.insertRowsIntoWorksheet(start, newRows)
     this.store.calcWorksheetSize()
-    this.render()
   }
 }

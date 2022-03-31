@@ -81,10 +81,15 @@ export function createPropDecorator<T>(propCreator: PropertyCreator) {
     function decorator(
       target: any,
       prop: PropertyKey,
-      descriptor: TypedPropertyDescriptor<T>
+      descriptor: TypedPropertyDescriptor<T>,
+      applyImmediately: boolean
     ) {
+      if (applyImmediately) {
+        propCreator(target, prop, descriptor, decoratorArgs)
+        return null
+      }
       if (!hasProp(target, pendingDecoratorSymbol)) {
-        addHiddenProp(target, pendingDecoratorSymbol, {...target[pendingDecoratorSymbol]})
+        addHiddenProp(target, pendingDecoratorSymbol, {})
       }
       target[pendingDecoratorSymbol][prop] = {
         decoratorTarget: target,
@@ -97,7 +102,7 @@ export function createPropDecorator<T>(propCreator: PropertyCreator) {
       return createDecoratorInitializer(prop)
     }
 
-    if ((arguments.length === 2 || arguments.length === 3) && typeof arguments[1] === 'string') {
+    if (((arguments.length === 2 || arguments.length === 3) && typeof arguments[1] === 'string') || (arguments.length === 4 && arguments[3] === true)) {
       decoratorArgs = []
       // eslint-disable-next-line prefer-spread
       return decorator.apply(null, arguments as any)
@@ -155,7 +160,8 @@ export const observableFactories = {
     const o = asCreateObservableOptions(options)
     const proxy = createObservableObject({}, o)
     const defaultDecorator = getDefaultDecoratorFromOptions(o)
-    return extendObservable(proxy as IPlainObject, target, decorators, defaultDecorator)
+    extendObservable(proxy as IPlainObject, target, decorators, defaultDecorator)
+    return proxy
   },
   set<T>(set: Set<T>, options?: CreateObservableOptions) {
     const o = asCreateObservableOptions(options)

@@ -37,6 +37,5 @@ export default class Accessibility extends Widget {
 
   private updateSize() {
     this.polymersheet.calcContainerNodeSize()
-    this.polymersheet.render()
   }
 }

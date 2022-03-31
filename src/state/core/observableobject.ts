@@ -18,7 +18,7 @@ import {
 import { getNextId, startBatch, endBatch, globalState } from './globalstate'
 import {
   didRunLazyInitializerSymbol,
-  getEnhancerFromOptions
+  getEnhancerFromOptions,
 } from './observable'
 import { BaseObservable, $obs } from './baseobservable'
 import { ObservableValue } from './observablevalue'
@@ -224,12 +224,12 @@ export function extendObservable<T extends IPlainObject, F extends IPlainObject>
   ownKeys(descriptors).forEach(propName => {
     const descriptor = descriptors[propName]
     const decorator = (decorators && propName in decorators
-      ? decorators
+      ? decorators[propName]
       : descriptor.get
         ? computedDecorator
         : defaultDecorator) as (...args: any[]) => TypedPropertyDescriptor<any>
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const resultDescriptor = decorator!(target, propName, descriptor)
+    const resultDescriptor = decorator!(target, propName, descriptor, true)
     if (resultDescriptor) {
       Object.defineProperty(target, propName, resultDescriptor)
     }

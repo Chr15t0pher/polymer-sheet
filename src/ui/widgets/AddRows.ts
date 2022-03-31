@@ -35,6 +35,7 @@ export default class AddRows extends Widget {
 
     this.addBtn.elem().addEventListener('click', this.handleAddRows)
     this.rowsInput.elem().addEventListener('keydown', this.handleKeydown)
+    this.render()
   }
 
   render() {

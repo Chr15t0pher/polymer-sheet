@@ -23,7 +23,6 @@ export default class ScrollBar extends Widget {
   }
 
   mount() {
-    console.info('rerender')
     const { viewNode, viewGridNodes } = this.polymersheet
     const parentNode = viewGridNodes[3]
 
@@ -136,14 +135,11 @@ export default class ScrollBar extends Widget {
   }
 
   private setScrollPosition(left: number, top: number) {
-    const worksheet = this.polymersheet.store.worksheet
+    const { worksheet, setWorksheetScrollInfo } = this.polymersheet.store
     const { scrollTop, scrollLeft } = worksheet
 
     if (scrollTop !== top || scrollLeft !== left) {
-      worksheet.scrollTop = top
-      worksheet.scrollLeft = left
-      this.polymersheet.render()
+      setWorksheetScrollInfo(top, left)
     }
-
   }
 }

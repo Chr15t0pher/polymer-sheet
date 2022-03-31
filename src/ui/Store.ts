@@ -1,100 +1,14 @@
 import { action, computed, observable } from '../state'
-import type { PolymerSheetOptions, Sheet, SheetId } from '../declare'
+import type { PolymerSheetOptions, Sheet, SheetId, Cell } from '../declare'
 import { isNullish } from '../utils'
 
 export type OverflowMap = Map<number, Map<number, { row: number, intervalLeftCol: number, intervalRightCol: number }>>
 
+export const PLACEHOLDER_WORKSHEET_ID = -1
+
 /**
  * Store 中所涉及的宽高均为「内容 + 边框」的总宽高
  */
-export interface Store extends PolymerSheetOptions {
-
-  /** 根节点宽度 */
-  containerNodeWidth: number
-  /** 根节点高度 */
-  containerNodeHeight: number
-
-  /** 画布宽度 */
-  contentWidth: number
-  /** 画布高度 */
-  contentHeight: number
-
-  /** 表格内容（单元格）部分的宽度 */
-  cellsContentWidth: number
-  /** 表格内容（单元格）部分的高度 */
-  cellsContentHeight: number
-
-  /** 画布右边距 */
-  contentPaddingRight: number
-  /** 画布底部边距 */
-  contentPaddingBottom: number
-
-  /** 设备像素比 */
-  devicePixelRatio: number
-
-  /** 表格缩放比例 */
-  zoomRatio: number
-
-  /** 当前表格的实际宽度 */
-  worksheetActualWidth: number
-  /** 当前表格的实际高度 */
-  worksheetActualHeight: number
-
-  /** 当前表格内容水平表格线的实际位置 */
-  horizontalLinesPosition: number[]
-  /** 当前表格内容垂直表格线的实际位置 */
-  verticalLinesPosition: number[]
-
-  /** 文本换行溢出位置记录 */
-  overflowMap: OverflowMap,
-
-  /** 滚动条宽度 */
-  scrollbarSize: number,
-}
-
-export const PLACEHOLDER_WORKSHEET_ID = -1
-
-const store: Store = {
-  containerId: 'polymer_sheet',
-
-  worksheetId: PLACEHOLDER_WORKSHEET_ID,
-
-  sheets: [],
-
-  toolbarHeight: 42,
-
-  rowHeaderWidth: 46,
-  columnHeaderHeight: 24,
-
-  defaultRowHeight: 20,
-  defaultColWidth: 100,
-
-  bottomBarHeight: 42,
-
-  containerNodeWidth: 0,
-  containerNodeHeight: 0,
-
-  contentWidth: 0,
-  contentHeight: 0,
-
-  cellsContentWidth: 0,
-  cellsContentHeight: 0,
-
-  contentPaddingRight: 20,
-  contentPaddingBottom: 50,
-
-  devicePixelRatio: window.devicePixelRatio,
-
-  zoomRatio: 1,
-
-  worksheetActualWidth: 0,
-  worksheetActualHeight: 0,
-
-  overflowMap: new Map(),
-
-  scrollbarSize: 12,
-}
-
 export const defaultPolymerSheetOptions: PolymerSheetOptions = {
   containerId: 'polymer_sheet',
 
@@ -171,9 +85,6 @@ export class PolymerSheetStore {
   containerNodeHeight = 0
 
   @observable
-  worksheetId: SheetId
-
-  @observable
   sheets: Sheet[]
 
   toolbarHeight: number
@@ -188,29 +99,42 @@ export class PolymerSheetStore {
 
   bottomBarHeight: number
 
+  /** 当前表格内容水平表格线的实际位置 */
   @observable
   horizontalLinesPosition: number[] = []
 
+  /** 当前表格内容垂直表格线的实际位置 */
   @observable
   verticalLinesPosition: number[] = []
 
+  /** 当前表格的实际宽度 */
   @observable
   worksheetActualWidth = 0
 
+  /** 当前表格的实际高度 */
   @observable
   worksheetActualHeight = 0
 
+  /** 设备像素比 */
   @observable
   devicePixelRatio = window.devicePixelRatio
 
+  /** 滚动条宽度 */
   scrollbarSize = 12
 
+  /** 文本换行溢出位置记录 */
   overflowMap = new Map()
 
   styles: PolymerSheetOptions['styles']
 
+  /** 画布右边距 */
   contentPaddingRight = 20
+
+  /** 画布底部边距 */
   contentPaddingBottom = 50
+
+  @observable
+  worksheet!: Sheet
 
   constructor(options: PolymerSheetOptions) {
     const {
@@ -227,7 +151,6 @@ export class PolymerSheetStore {
     } = options
     this.containerId = containerId
     this.sheets = sheets
-    this.worksheetId = worksheetId
     this.toolbarHeight = toolbarHeight
     this.rowHeaderWidth = rowHeaderWidth
     this.columnHeaderHeight = columnHeaderHeight
@@ -237,48 +160,58 @@ export class PolymerSheetStore {
     this.styles = styles
 
     if (this.sheets.length > 0) {
-      const defaultWorksheetId = this.sheets.some((sheet) => sheet.id === this.worksheetId)
-        ? this.worksheetId
+      const defaultWorksheetId = this.sheets.some((sheet) => sheet.id === worksheetId)
+        ? worksheetId
         : sheets[0].id
       this.setWorksheet(defaultWorksheetId)
+      if (this.worksheet) {
+        this.calcWorksheetSize()
+      }
     }
   }
 
+  /** 画布宽度 */
   @computed
   get contentWidth() {
     return this.containerNodeWidth - this.scrollbarSize
   }
 
+  /** 画布高度 */
   @computed
   get contentHeight() {
     return this.containerNodeHeight - this.scrollbarSize - this.toolbarHeight - this.bottomBarHeight
   }
 
+  /** 表格内容（单元格）部分的宽度 */
   @computed
   get cellsContentWidth() {
     return this.contentWidth - this.rowHeaderWidth
   }
 
+  /** 表格内容（单元格）部分的高度 */
   @computed
   get cellsContentHeight() {
     return this.contentHeight - this.columnHeaderHeight
   }
 
-  @computed
-  get worksheet() {
-    return this.sheets.filter(sheet => sheet.id === this.worksheetId)[0] || this.sheets[0]
+  @action
+  setWorksheet = (sheetId: SheetId) => {
+    this.worksheet = this.sheets.filter(sheet => sheet.id === sheetId)[0] || this.sheets[0]
   }
 
   @action
-  setWorksheet(sheetId: SheetId) {
-    this.worksheetId = sheetId
-    if (this.worksheet) {
-      this.calcWorksheetSize()
-    }
+  insertRowsIntoWorksheet = (start: number, newRows: Cell[][]) => {
+    this.worksheet.cells.splice(start, 0, ...newRows)
   }
 
   @action
-  calcWorksheetSize() {
+  setWorksheetScrollInfo = (scrollTop: number, scrollLeft: number) => {
+    this.worksheet.scrollTop = scrollTop
+    this.worksheet.scrollLeft = scrollLeft
+  }
+
+  @action
+  calcWorksheetSize = () => {
     const { worksheet } = this
     const rowLen = worksheet.cells.length
     const columnLen = worksheet.cells[0].length
@@ -325,5 +258,10 @@ export class PolymerSheetStore {
     this.worksheetActualHeight = worksheetActualHeight
     this.worksheetActualWidth = worksheetActualWidth
   }
+
+  @action
+  calcContainerNodeSize = (width: number, height: number) => {
+    this.containerNodeWidth = width
+    this.containerNodeHeight = height
+  }
 }
-export default store

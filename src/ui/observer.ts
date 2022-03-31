@@ -11,7 +11,9 @@ export function observer(renderableClass: any) {
 
 function makeReactiveRenderer(this: any, baseRender: () => void) {
   const reaction = new Reaction(`${getDisplayName(this)}.render`, () => {
-    baseRender.call(this)
+    reaction.track(() => {
+      baseRender.call(this)
+    })
   })
 
   reaction.track(() => {

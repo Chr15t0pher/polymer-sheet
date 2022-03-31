@@ -52,8 +52,8 @@ export default class Content extends Widget {
 
     if (worksheet) {
       this.drawContent()
-      this.drawRowHeader(worksheet)
-      this.drawColumnHeader(worksheet)
+      this.drawRowHeader()
+      this.drawColumnHeader()
       this.drawUpperLeftCorner()
     }
   }
@@ -74,13 +74,14 @@ export default class Content extends Widget {
     )
   }
 
-  drawRowHeader(worksheet: Sheet) {
+  drawRowHeader() {
     const {
       columnHeaderHeight,
       contentHeight,
       horizontalLinesPosition,
       rowHeaderWidth,
-      styles: { header: headerStyles = {} }
+      styles: { header: headerStyles = {} },
+      worksheet
     } = this.polymersheet.store
     const { scrollTop = 0 } = worksheet
     const { borderWidth = 1 } = headerStyles.default || {}
@@ -136,13 +137,14 @@ export default class Content extends Widget {
     this.brush.restore()
   }
 
-  drawColumnHeader(worksheet: Sheet) {
+  drawColumnHeader() {
     const {
       rowHeaderWidth,
       contentWidth,
       verticalLinesPosition,
       columnHeaderHeight,
-      styles: { header: headerStyles = {} }
+      styles: { header: headerStyles = {} },
+      worksheet
     } = this.polymersheet.store
     const { scrollLeft = 0 } = worksheet
     const { borderWidth = 1 } = headerStyles.default || {}
