@@ -15,5 +15,6 @@
   "files.eol": "\n",
   "cSpell.words": [
     "polymersheet"
-  ]
+  ],
+  "compile-hero.disable-compile-files-on-did-save-code": false
 }

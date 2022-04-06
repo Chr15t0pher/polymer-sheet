@@ -72,7 +72,7 @@ fork(
           if (stats?.hasErrors()) {
             throw new Error('Build failed with errors')
           }
-          console.info(formatStats(stats!, argv))
+          console.log(formatStats(stats!, argv))
         })
     })
   },

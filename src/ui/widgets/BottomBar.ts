@@ -1,5 +1,4 @@
 import { Widget } from './Widget'
-
 export default class BottomBar extends Widget {
   mount() {
     const parentNode = this.polymersheet.containerNode

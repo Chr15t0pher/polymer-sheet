@@ -1,5 +1,4 @@
 import { throttle } from 'throttle-debounce'
-
 import { Widget } from './Widget'
 
 export default class Accessibility extends Widget {
@@ -38,6 +37,5 @@ export default class Accessibility extends Widget {
 
   private updateSize() {
     this.polymersheet.calcContainerNodeSize()
-    this.polymersheet.update()
   }
 }

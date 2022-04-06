@@ -6,13 +6,14 @@ import { Stats, StatsCompilation } from 'webpack'
 import { noop } from 'lodash'
 import { Argv } from './types'
 
+// eslint-disable-next-line
 const ui = require('cliui')({ width: process.stdout.columns || 80 })
 
 export function resolvePath(...pathFragments: string[]) {
   return path.resolve(__dirname, '..', '..', ...pathFragments)
 }
 
-export function fork(condition: boolean, truthy: Function, falsy?: Function) {
+export function fork(condition: boolean, truthy: () => void, falsy?: () => void) {
   if (condition) {
     return truthy()
   }
