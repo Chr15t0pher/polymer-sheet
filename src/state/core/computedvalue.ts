@@ -1,18 +1,24 @@
 import type { IDerivation } from './derivation'
-import type { IEqualComparer, IBabelDescriptor } from '../utils'
+import { IEqualComparer, IBabelDescriptor, wrapInstanceWithPredicate, throwError, ErrorType } from '../utils'
 
 import { BaseObservable } from './baseobservable'
 import { createPropDecorator } from './observable'
-
 import { asObservableObject } from './observableobject'
-
-import { trackDerivedFunction } from './derivation'
-
-import { createAction } from './action'
-
-import { globalState, getNextId, startBatch, endBatch, reportChanged, reportObserved } from './globalstate'
+import { trackDerivedFunction, shouldReconcile } from './derivation'
+import { createAction, untracked } from './action'
+import { ObservableState } from './types-utils'
+import {
+  globalState,
+  getNextId,
+  startBatch,
+  endBatch,
+  reportConfirmChanged,
+  reportPossiblyChanged,
+  reportObserved
+} from './globalstate'
 
 import { comparer } from '../utils'
+import { hasListener, IChangeInfo, IChangeListener, IListenable, notifyListeners, registerListener, changeType, changeSubjectType } from './change'
 
 export type IComputedOptions<T = any> = {
   get?: () => T
@@ -22,7 +28,18 @@ export type IComputedOptions<T = any> = {
   equals?: IEqualComparer<T>
 }
 
-export class ComputedValue<T = any> extends BaseObservable implements IDerivation {
+export class ComputedValue<T = any> extends BaseObservable implements IDerivation, IListenable<ComputedValue> {
+  /**
+	* dependenciesState will be changed when it's dependencies call `reportChanged` or `reportPossiblyChanged`
+	* 1. notTracking: initial phrase
+	* 2. updated
+	* 3. possiblyChanged: it's dependencies have included computedValue, the computedValue was called `onOutdated` by it's dependency
+	* 4. outdated:
+	*/
+  dependenciesState = ObservableState.notTracking
+
+  changeListeners: Set<IChangeListener<ComputedValue<any>, any, any>> = new Set()
+
   diffValue = 0
 
   observers = new Set<IDerivation>()
@@ -47,6 +64,10 @@ export class ComputedValue<T = any> extends BaseObservable implements IDerivatio
 
   isRunningSetter = false
 
+  lastAccessedBy = 0
+
+  runId = 0
+
   constructor(options: IComputedOptions<T>) {
     super(options.name || 'ComputeValue@' + getNextId())
     if (options.set) this.setter = createAction(this.name + '-setter', options.set)
@@ -56,17 +77,17 @@ export class ComputedValue<T = any> extends BaseObservable implements IDerivatio
   }
 
   onOutdated() {
-    reportChanged(this)
+    reportPossiblyChanged(this)
   }
 
   get() {
-    if (this.isComputing) throw new Error(`Cycle detected in computation ${this.name}: ${this.derivation}`)
+    if (this.isComputing) throwError(ErrorType.cycleComputation, this.name, this.derivation)
     if (globalState.inBatch === 0 && this.observers.size === 0) {
       this.value = this.computeValue(false)
     } else {
       reportObserved(this)
       startBatch()
-      if (this.trackAndCompute()) reportChanged(this)
+      if (shouldReconcile(this)) if (this.trackAndCompute()) reportConfirmChanged(this)
       endBatch()
     }
     return this.value
@@ -88,6 +109,20 @@ export class ComputedValue<T = any> extends BaseObservable implements IDerivatio
 
     if (changed) {
       this.value = newValue
+      if (hasListener(this)) {
+        untracked(() => {
+          const change: IChangeInfo<ComputedValue> = {
+            subjectType: changeSubjectType.computed,
+            subjectName: this.name,
+            subject: this,
+            name: this.name,
+            type: changeType.UPDATE,
+            prev: oldValue,
+            next: newValue
+          }
+          notifyListeners(this, change)
+        })
+      }
     }
 
     return changed
@@ -107,7 +142,16 @@ export class ComputedValue<T = any> extends BaseObservable implements IDerivatio
 
     return res
   }
+
+  observe(listener: IChangeListener<ComputedValue>) {
+    return registerListener(this, listener)
+  }
 }
+
+export const isComputedValue = wrapInstanceWithPredicate(
+  'ComputedValue',
+  ComputedValue
+)
 
 export const computedDecorator = createPropDecorator(
   (instance: any, decoratorProp: PropertyKey, descriptor: IBabelDescriptor) => {

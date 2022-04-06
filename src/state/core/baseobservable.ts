@@ -1,7 +1,8 @@
 import type { IDerivation } from './derivation'
 import type { IEnhancer } from './modifiers'
-import type { IEqualComparer } from '../utils'
+import { IEqualComparer } from '../utils'
 
+import { ObservableState } from './types-utils'
 import { wrapInstanceWithPredicate } from '../utils'
 
 import { startBatch, endBatch, reportChanged, reportObserved } from './globalstate'
@@ -9,6 +10,10 @@ import { startBatch, endBatch, reportChanged, reportObserved } from './globalsta
 export const $obs = Symbol('observable administration')
 
 export class BaseObservable {
+  observableState = ObservableState.notTracking
+
+  lastAccessedBy = 0
+
   diffValue = 0
 
   observers = new Set<IDerivation>()

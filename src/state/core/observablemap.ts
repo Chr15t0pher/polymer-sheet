@@ -1,4 +1,5 @@
 import type { IEnhancer } from './modifiers'
+import type { IChangeInfo, IChangeListener } from './change'
 
 import { BaseObservable, $obs } from './baseobservable'
 
@@ -11,12 +12,17 @@ import { globalState, getNextId } from './globalstate'
 import { ObservableValue } from './observablevalue'
 
 import { wrapInstanceWithPredicate, makeIterable } from '../utils'
+import { changeSubjectType, changeType, hasListener, IListenable, notifyListeners, registerListener } from './change'
+
 
 const observableMarker = {}
 
-export class ObservableMap<K, V> implements Map<K, V> {
+export type IObservableMapChangeListener<K, V> = IChangeListener<ObservableMap<K, V>>
+
+export class ObservableMap<K, V> implements Map<K, V>, IListenable<ObservableMap<K, V>, K, V> {
   [$obs] = observableMarker
   keysAtom: BaseObservable
+  changeListeners: Set<IChangeListener<ObservableMap<K, V>, K, V>> = new Set()
   readonly values_: Map<K, ObservableValue<V>> = new Map()
   readonly hasMap_: Map<K, ObservableValue<boolean>> = new Map()
 
@@ -44,11 +50,27 @@ export class ObservableMap<K, V> implements Map<K, V> {
   delete(key: K) {
     if(this.has(key)) {
       transaction(() => {
-        this.keysAtom.reportChanged()
         this.updateHasMapEntry(key, false)
         const observable = this.values_.get(key)
+        const prev = observable?.get()
         observable?.set(undefined as any)
         this.values_.delete(key)
+        this.keysAtom.reportChanged()
+        const needNotify = hasListener(this)
+        if (needNotify) {
+          untracked(() => {
+            const change: IChangeInfo<ObservableMap<K, V>> = {
+              subjectType: changeSubjectType.map,
+              subjectName: this.name,
+              subject: this,
+              name: key,
+              type: changeType.DELETE,
+              prev,
+              next: undefined,
+            }
+            notifyListeners(this, change)
+          })
+        }
       })
     }
 
@@ -79,16 +101,49 @@ export class ObservableMap<K, V> implements Map<K, V> {
     if (this.has(key)) {
       // update value
       transaction(() => {
-        const value = this.values_.get(key)!
-        value.set(newValue)
+        const observable = this.values_.get(key)!
+        const prev = observable.get()
+
+        const val = observable.prepareNewValue(newValue)
+        if (val !== globalState.UNCHANGED) {
+          observable.setNewValue(val)
+          if (hasListener(this)) {
+            untracked(() => {
+              const change: IChangeInfo<ObservableMap<K, V>> = {
+                subjectType: changeSubjectType.map,
+                subjectName: this.name,
+                subject: this,
+                name: key,
+                type: changeType.UPDATE,
+                prev,
+                next: newValue
+              }
+              notifyListeners(this, change)
+            })
+          }
+        }
       })
     } else {
       // add new value
       transaction(() => {
-        const value = new ObservableValue(newValue, this.name + new String(key).toString(), this.enhancer,)
+        const value = new ObservableValue(newValue, this.name + new String(key).toString(), this.enhancer)
         this.values_.set(key, value)
         this.updateHasMapEntry(key, true)
         this.keysAtom.reportChanged()
+        if (hasListener(this)) {
+          untracked(() => {
+            const change: IChangeInfo<ObservableMap<K, V>> = {
+              subjectType: changeSubjectType.map,
+              subjectName: this.name,
+              subject: this,
+              name: key,
+              type: changeType.ADD,
+              prev: undefined,
+              next: newValue
+            }
+            notifyListeners(this, change)
+          })
+        }
       })
     }
     return this
@@ -132,6 +187,10 @@ export class ObservableMap<K, V> implements Map<K, V> {
         return { done, value: done ? undefined : [key, self.get(key)]}
       }
     })
+  }
+
+  observe(listener:IObservableMapChangeListener<K, V>) {
+    return registerListener(this, listener)
   }
 
 

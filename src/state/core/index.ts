@@ -1,5 +1,6 @@
 export * from './action'
 export * from './baseobservable'
+export * from './change'
 export * from './computedvalue'
 export * from './derivation'
 export * from './globalstate'

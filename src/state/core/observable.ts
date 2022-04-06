@@ -1,16 +1,17 @@
 import type { IEnhancer } from './modifiers'
-import type { IPlainObject, IBabelDescriptor } from '../utils'
+import { IPlainObject, IBabelDescriptor, throwError, ErrorType } from '../utils'
 import type { CreateObservableOptions } from './baseobservable'
 
 import { isBaseObservable, $obs, asCreateObservableOptions } from './baseobservable'
 import { isReaction } from './reaction'
 import { deepEnhancer, referenceEnhancer } from './modifiers'
 import { isObservableObject, asObservableObject, createObservableObject, extendObservable } from './observableobject'
-import { createObservableArray } from './observablearray'
-import { ObservableMap } from './observablemap'
-import { ObservableSet } from './observableset'
+import { createObservableArray, isObservableArray } from './observablearray'
+import { isObservableMap, ObservableMap } from './observablemap'
+import { isObservableSet, ObservableSet } from './observableset'
 import { ObservableValue } from './observablevalue'
 import { addHiddenProp, hasProp } from '../utils'
+import { isComputedValue } from './computedvalue'
 
 export function isObservable(v: any) {
   if (v === undefined || v === null) return false
@@ -19,6 +20,7 @@ export function isObservable(v: any) {
     isObservableObject(v) ||
     isReaction(v) ||
     isBaseObservable(v) ||
+		isComputedValue(v) ||
     !!v[$obs]
   )
 }
@@ -147,7 +149,7 @@ export function getDefaultDecoratorFromOptions(options: CreateObservableOptions)
 }
 
 export const observableFactories = {
-  box<T>(value: T, options?: CreateObservableOptions) {
+  box<T>(value?: T, options?: CreateObservableOptions) {
     const o = asCreateObservableOptions(options)
     return new ObservableValue(value, o.name, getEnhancerFromOptions(o), o.equals)
   },
@@ -173,4 +175,47 @@ export const observableFactories = {
   },
   ref: referenceDecorator,
   deep: deepDecorator
+}
+
+export function getAtom(thing: any, property?: PropertyKey) {
+  if (typeof thing === 'object' && thing !== null) {
+    if (isObservableArray(thing)) {
+      if (property !== undefined) throwError(ErrorType.getIndexAtomFromArray)
+      return thing[$obs].atom
+    } else if (isObservableSet(thing)) {
+      return thing.atom
+    } else if (isObservableMap(thing)) {
+      if (property === undefined) return thing.keysAtom
+      const observable = thing.values_.get(property) || thing.hasMap_.get(property)
+      if (!observable) throwError(ErrorType.entryDoesNotExist)
+      return observable
+    } else if (isObservableObject(thing)) {
+      if (!property) throwError(ErrorType.needProperty)
+      const observable = thing[$obs].values.get(property) || thing[$obs].pendingKeys.get(property)
+      if (!observable) throwError(ErrorType.noPropertyInObject, getDebugName(thing))
+      return observable
+    } else if (isComputedValue(thing) || isBaseObservable(thing)) {
+      return thing
+    }
+  }
+  throwError(ErrorType.cannotGetAtom, getDebugName(thing))
+}
+
+export function getAdministration(thing: any, property?: PropertyKey): any {
+  if (!thing) throwError(ErrorType.expectObject)
+  if (property !== undefined) return getAdministration(getAtom(thing, property))
+  if (isBaseObservable(thing) || isComputedValue(thing)) return thing
+  if (isObservableMap(thing) || isObservableSet(thing)) return thing
+  if (thing[$obs]) return thing[$obs]
+  throwError(getDebugName(thing))
+}
+
+export function getDebugName(thing: any, property?: PropertyKey) {
+  let named
+  if (property !== undefined) {
+    named = getAtom(thing, property)
+  } else if (isObservableObject(thing) || isObservableArray(thing) || isObservableMap(thing) || isObservableSet(thing)) {
+    named = getAtom(thing)
+  }
+  return named.name
 }

@@ -18,7 +18,7 @@ export const getDescriptors = Object.getOwnPropertyDescriptors || function getOw
   }, {} as F)
 }
 
-export function hasProp(target: Record<string, unknown>, prop: PropertyKey) {
+export function hasProp<K extends PropertyKey>(target: Record<K, unknown>, prop: PropertyKey): prop is K {
   return Object.prototype.hasOwnProperty.call(target, prop)
 }
 
@@ -48,7 +48,16 @@ export function isStringish(value: any): value is number | string | symbol {
 }
 
 export function isObject(value: any) {
-  return value !== null && Object.prototype.toString.call(value) === '[object Object]'
+  return value !== null && (typeof value === 'object' || typeof value === 'function')
+}
+
+const plainObjectString = Object.toString()
+
+export function isPlainObject(value: any) {
+  if (!isObject(value)) return false
+  const prototype = Object.getPrototypeOf(value)
+  if (Object.getPrototypeOf(value) === null) return true
+  return prototype.constructor.toString() === plainObjectString
 }
 
 export function isFunction(value: any): value is (...args: any[]) => any {
@@ -63,10 +72,20 @@ export function isSet(v: any): v is Set<any> {
   return v instanceof Set
 }
 
+export function once(cb: (...args: any[]) => any ) {
+  let invoked = false
+  return function wrapper() {
+    if (!invoked) return invoked
+    invoked = true
+    // eslint-disable-next-line prefer-spread
+    return cb.apply(null, Array.from(arguments))
+  }
+}
+
 export function wrapInstanceWithPredicate<T>(name: string, clazz: new(...args: any[]) => T) {
-  const propName = 'isMbx' + name
+  const propName = 'is' + name
   clazz.prototype[propName] = true
-  return function(x: any) {
+  return function(x: any): x is T {
     return isObject(x) && x[propName] === true
   }
 }

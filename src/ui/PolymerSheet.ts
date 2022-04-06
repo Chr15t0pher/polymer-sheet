@@ -1,7 +1,5 @@
 import './index.styl'
 
-import { throttle } from 'throttle-debounce'
-
 import type { Widget } from './widgets/Widget'
 import type { Dom } from '../utils'
 import type { Cell } from '../declare'
@@ -11,9 +9,6 @@ import { defaultPolymerSheetOptions, PolymerSheetStore } from './Store'
 import { mergeOptions, d } from '../utils'
 import { PolymerSheetOptions } from '../declare'
 
-import { observer } from './observer'
-
-@observer
 export class PolymerSheet {
   private readonly rootNodeId = 'polymersheet'
   private readonly viewNodeId = 'polymersheet__view'
@@ -31,17 +26,12 @@ export class PolymerSheet {
   constructor(options: Partial<PolymerSheetOptions>) {
     this.store = new PolymerSheetStore(mergeOptions(defaultPolymerSheetOptions, options))
     this.widgets = Widgets.map(C => new C(this))
-    this.render = throttle(50, this.render.bind(this))
   }
 
   mount() {
     this.renderSkeleton()
     this.calcContainerNodeSize()
     this.widgets.forEach(w => w.mount())
-  }
-
-  render() {
-    this.widgets.forEach(w => w.render())
   }
 
   private renderSkeleton() {

@@ -11,14 +11,14 @@ export function observer(renderableClass: any) {
 
 function makeReactiveRenderer(this: any, baseRender: () => void) {
   const reaction = new Reaction(`${getDisplayName(this)}.render`, () => {
+    // Need to reTrack, if Observable add new property, it will call `addObservableProperty` to add a new ObservableValue, then keysAtom calls `reportChanged`, new ObservableValue need to call `bindDependencies`
+    // if do not reTrack, just rerender one time but without calling `bindDependencies`, if the added property changes, rerender will not be called,
     reaction.track(() => {
       baseRender.call(this)
     })
   })
 
-  reaction.track(() => {
-    baseRender.call(this)
-  })
+  reaction.schedule()
 }
 
 function getDisplayName(target: any) {

@@ -135,11 +135,8 @@ export default class ScrollBar extends Widget {
   }
 
   private setScrollPosition(left: number, top: number) {
-    const { worksheet, setWorksheetScrollInfo } = this.polymersheet.store
-    const { scrollTop, scrollLeft } = worksheet
+    const { setWorksheetScrollInfo } = this.polymersheet.store
 
-    if (scrollTop !== top || scrollLeft !== left) {
-      setWorksheetScrollInfo(top, left)
-    }
+    setWorksheetScrollInfo(top, left)
   }
 }

@@ -1,8 +1,9 @@
 import type { IEnhancer } from './modifiers'
 import type { CreateObservableOptions } from './baseobservable'
+import type { IChangeListener } from './change'
 
 import { getEnhancerFromOptions } from './observable'
-
+import { changeSubjectType, changeType, hasListener, IChangeInfo, IListenable, notifyListeners, registerListener } from './change'
 import { BaseObservable, $obs, asCreateObservableOptions } from './baseobservable'
 import { deepEnhancer } from './modifiers'
 import { getNextId } from './globalstate'
@@ -16,9 +17,11 @@ import { ObservableValue } from './observablevalue'
 
 const observableMarker = {}
 
-export class ObservableSet<T = any> implements Set<T> {
+export type IObservableSetChangeListener = IChangeListener<ObservableSet>
+export class ObservableSet<T = any> implements Set<T>, IListenable<ObservableSet> {
   [$obs] = observableMarker
   atom: BaseObservable
+  changeListeners: Set<IChangeListener<ObservableSet<any>, any, any>> = new Set()
   readonly values_ = new Set<T>()
 
   constructor(
@@ -52,6 +55,20 @@ export class ObservableSet<T = any> implements Set<T> {
       transaction(() => {
         this.atom.reportChanged()
         this.values_.add(this.enhancer(newValue))
+        if (hasListener(this)) {
+          untracked(() => {
+            const change: IChangeInfo<ObservableSet<T>> = {
+              subjectType: changeSubjectType.set,
+              subjectName: this.name,
+              subject: this,
+              name: newValue,
+              type: changeType.ADD,
+              prev: undefined,
+              next: newValue
+            }
+            notifyListeners(this, change)
+          })
+        }
       })
     }
     return this
@@ -62,6 +79,20 @@ export class ObservableSet<T = any> implements Set<T> {
       transaction(() => {
         this.atom.reportChanged()
         this.values_.delete(value)
+        if (hasListener(this)) {
+          untracked(() => {
+            const change: IChangeInfo<ObservableSet<T>> = {
+              subjectType: changeSubjectType.set,
+              subjectName: this.name,
+              subject: this,
+              name: value,
+              type: changeType.DELETE,
+              prev: value,
+              next: undefined
+            }
+            notifyListeners(this, change)
+          })
+        }
       })
       return true
     }
@@ -115,6 +146,10 @@ export class ObservableSet<T = any> implements Set<T> {
   }
 
   [Symbol.toStringTag] = 'Set'
+
+  observe(listener: IObservableSetChangeListener) {
+    return registerListener(this, listener)
+  }
 }
 
 export const isObservableSet = wrapInstanceWithPredicate(

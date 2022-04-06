@@ -5,7 +5,7 @@ import type { ObservableMap } from './observablemap'
 import type { ObservableSet } from './observableset'
 
 import { isObservable, observableFactories } from './observable'
-import { isObject, isMap, isSet } from '../utils'
+import { isPlainObject, isMap, isSet } from '../utils'
 export interface IEnhancer<T> {
   (newValue: T, oldValue?: T , name?: string): T
 }
@@ -22,13 +22,13 @@ export function deepEnhancer<K, V>(
 ) {
   if (isObservable(newValue)) return newValue
 
-  if (isObject(newValue)) return observableFactories.object(newValue, undefined, { name })
-
   if (Array.isArray(newValue)) return observableFactories.array(newValue, { name })
 
   if (isMap(newValue)) return observableFactories.map(newValue, { name })
 
   if (isSet(newValue)) return observableFactories.set(newValue, { name })
+
+  if (isPlainObject(newValue)) return observableFactories.object(newValue, undefined, { name })
 
   return newValue
 }

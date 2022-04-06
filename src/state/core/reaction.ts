@@ -9,8 +9,11 @@ import {
 import {
   wrapInstanceWithPredicate,
 } from '../utils'
+import { ObservableState } from './types-utils'
 
 export class Reaction implements IDerivation {
+  dependenciesState = ObservableState.notTracking
+
   newObserving: BaseObservable[] = []
 
   observing: BaseObservable[] = []
@@ -22,7 +25,13 @@ export class Reaction implements IDerivation {
   // per reaction may have multiple observable(dependencies)
   depsUnboundCount = 0
 
+  runId = 0
+
   constructor(public name: string, public handleOutdated: () => void) {}
+
+  schedule() {
+    this.onOutdated()
+  }
 
   onOutdated() {
     globalState.pendingReactions.push(this)
@@ -45,6 +54,15 @@ export class Reaction implements IDerivation {
     trackDerivedFunction(this, fn, undefined)
     globalState.trackingDerivation = prevReaction
     endBatch()
+  }
+
+  dispose = () => {
+    if (!this.disposed) {
+      this.disposed = true
+      if (!this.running) {
+        // TODO: clearObserving
+      }
+    }
   }
 }
 
