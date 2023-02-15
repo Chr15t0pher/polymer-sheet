@@ -9,9 +9,11 @@ import DuplicatePackageCheckerPlugin from 'duplicate-package-checker-webpack-plu
 import CircularDependencyPlugin from 'circular-dependency-plugin'
 import MiniCssExtractPlugin from 'mini-css-extract-plugin'
 import { BundleAnalyzerPlugin } from 'webpack-bundle-analyzer'
+import WasmPackPlugin from '@wasm-tool/wasm-pack-plugin'
 import { compact } from 'lodash'
 import { Argv, NODE_ENV } from './types'
 import getClientEnvironment from './env'
+import { resolvePath } from './util'
 
 export default function getPlugins(argv: Argv): WebpackPluginInstance[] {
   return compact([
@@ -86,5 +88,10 @@ export default function getPlugins(argv: Argv): WebpackPluginInstance[] {
      * Visualize size of webpack output files with an interactive zoomable treemap.
      */
     argv.analyze && new BundleAnalyzerPlugin(),
+
+    new WasmPackPlugin({
+      crateDirectory: resolvePath('./shared/wasm'),
+      forceMode: argv.NODE_ENV
+    })
   ])
 }

@@ -30,7 +30,7 @@ export default function getOptimization(argv: Argv): Configuration['optimization
             ascii_only: true,
           },
         },
-      }) as unknown as WebpackPluginInstance,
+      }),
       /**
        * https://github.com/webpack-contrib/css-minimizer-webpack-plugin
        * This plugin uses cssnano to optimize and minify your CSS.

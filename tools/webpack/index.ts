@@ -45,6 +45,10 @@ const config = {
   plugins: getPlugins(argv),
 
   optimization: getOptimization(argv),
+
+  experiments: {
+    asyncWebAssembly: true,
+  }
 }
 
 export default config
